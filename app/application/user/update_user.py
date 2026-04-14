@@ -17,7 +17,7 @@ class UpdateUserInputDTO:
 
 @dataclass
 class UpdateUserOutputDTO:
-    id: int
+    id: str
     email: str
     full_name: str
     is_admin: bool
@@ -70,7 +70,7 @@ class UpdateUserInteractor(Interactor[UpdateUserInputDTO, UpdateUserOutputDTO]):
             )
 
         return UpdateUserOutputDTO(
-            id=user.id.value,
+            id=str(user.id.value),
             email=user.email.value,
             full_name=user.full_name,
             is_admin=user.is_admin,

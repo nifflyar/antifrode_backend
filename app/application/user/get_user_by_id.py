@@ -12,7 +12,7 @@ class GetUserByIdInputDTO:
 
 @dataclass
 class GetUserByIdOutputDTO:
-    id: int
+    id: str
     email: str
     full_name: str
     is_admin: bool
@@ -33,12 +33,12 @@ class GetUserByIdInteractor(Interactor[GetUserByIdInputDTO, GetUserByIdOutputDTO
             raise ValueError(f"User {data.user_id.value} not found")
 
         return GetUserByIdOutputDTO(
-            id=user.id.value,
+            id=str(user.id.value),
             email=user.email.value,
             full_name=user.full_name,
             is_admin=user.is_admin,
             role=user.role.value,
             is_active=user.is_active,
-            created_at=user.created_at.isoformat(),
+            created_at=user.created_at.isoformat() if user.created_at else "",
             last_login_at=user.last_login_at.isoformat() if user.last_login_at else None,
         )
