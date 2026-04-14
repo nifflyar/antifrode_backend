@@ -1,0 +1,59 @@
+# PYTHON
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# VIRTUAL ENV
+.venv/
+venv/
+env/
+
+# ENV FILES
+.env
+.env.*
+!.env.example
+
+# FASTAPI / UVICORN
+*.log
+
+
+# ALEMBIC
+alembic/versions/*.pyc
+
+# DOCKER
+*.pid
+docker-data/
+docker-volumes/
+
+# TESTS / COVERAGE
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# TEMP
+*.tmp
+*.swp
+
+# UPLOADS
+/tmp/uploads/
+
+# ML SERVICE
+ml_service/__pycache__/
+
+# DATABASE MIGRATIONS
+alembic/versions/
