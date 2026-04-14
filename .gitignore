@@ -57,3 +57,7 @@ ml_service/__pycache__/
 
 # DATABASE MIGRATIONS
 alembic/versions/
+
+# AGENT FILES
+implementation_plan.md
+_test_di.py

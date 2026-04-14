@@ -7,6 +7,12 @@ from app.application.common.transaction import TransactionManager
 from app.domain.audit.repository import IAuditLogRepository
 from app.domain.auth import RefreshSessionRepository
 from app.domain.user.repository import IUserRepository
+from app.domain.upload.repository import IUploadRepository
+from app.domain.transaction.repository import ITransactionRepository
+from app.domain.passenger.repository import IPassengerRepository
+from app.domain.passenger.feature_repository import IPassengerFeatureRepository
+from app.domain.passenger.score_repository import IPassengerScoreRepository
+from app.domain.risk.repository import IRiskConcentrationRepository
 from app.infrastructure.config import Config
 from app.infrastructure.db.factory import create_session_maker
 from app.infrastructure.db.holder import HolderDao
@@ -86,3 +92,45 @@ class DBProvider(Provider):
         holder_dao: HolderDao,
     ) -> IAuditLogRepository:
         return holder_dao.audit_log_repo
+
+    @provide(scope=Scope.REQUEST)
+    async def get_upload_repository(
+        self,
+        holder_dao: HolderDao,
+    ) -> IUploadRepository:
+        return holder_dao.upload_repo
+
+    @provide(scope=Scope.REQUEST)
+    async def get_transaction_repository(
+        self,
+        holder_dao: HolderDao,
+    ) -> ITransactionRepository:
+        return holder_dao.transaction_repo
+
+    @provide(scope=Scope.REQUEST)
+    async def get_passenger_repository(
+        self,
+        holder_dao: HolderDao,
+    ) -> IPassengerRepository:
+        return holder_dao.passenger_repo
+
+    @provide(scope=Scope.REQUEST)
+    async def get_passenger_feature_repository(
+        self,
+        holder_dao: HolderDao,
+    ) -> IPassengerFeatureRepository:
+        return holder_dao.passenger_feature_repo
+
+    @provide(scope=Scope.REQUEST)
+    async def get_passenger_score_repository(
+        self,
+        holder_dao: HolderDao,
+    ) -> IPassengerScoreRepository:
+        return holder_dao.passenger_score_repo
+
+    @provide(scope=Scope.REQUEST)
+    async def get_risk_concentration_repository(
+        self,
+        holder_dao: HolderDao,
+    ) -> IRiskConcentrationRepository:
+        return holder_dao.risk_concentration_repo

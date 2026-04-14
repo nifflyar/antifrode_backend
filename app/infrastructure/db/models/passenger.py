@@ -4,17 +4,19 @@ from sqlalchemy import TIMESTAMP, Float, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.passenger.vo import PassengerId
-from app.domain.passenger.entity import PassengerFeatures, PassengerScore
 
 from .base import BaseORMModel
-from .types.entities import (
-    PassengerIdType,
-    PassengerFeaturesType,
-    PassengerScoreType,
-)
+from .types.entities import PassengerIdType
 
 
 class PassengerModel(BaseORMModel):
+    """Агрегированный профиль пассажира.
+
+    Признаки и результаты скоринга хранятся в отдельных таблицах:
+    - passenger_features (PassengerFeaturesModel)
+    - passenger_scores   (PassengerScoreModel)
+    """
+
     __tablename__ = "passengers"
 
     id: Mapped[PassengerId] = mapped_column(PassengerIdType, primary_key=True)
@@ -25,10 +27,4 @@ class PassengerModel(BaseORMModel):
     )
     last_seen_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False, index=True
-    )
-    features: Mapped[PassengerFeatures | None] = mapped_column(
-        PassengerFeaturesType, nullable=True
-    )
-    score: Mapped[PassengerScore | None] = mapped_column(
-        PassengerScoreType, nullable=True
     )
