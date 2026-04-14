@@ -136,7 +136,7 @@ async def update_user(
         )
 
     try:
-        return await interactor(
+        result = await interactor(
             UpdateUserInputDTO(
                 user_id=UserId(user_id),
                 actor_user_id=claims.user_id if claims else None,
@@ -144,6 +144,8 @@ async def update_user(
                 is_admin=data.is_admin,
             )
         )
+        await transaction_manager.commit()
+        return result
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -169,6 +171,7 @@ async def delete_user(
     request: Request,
     config: FromDishka[Config],
     interactor: FromDishka[DeleteUserInteractor] = None,
+    transaction_manager: FromDishka[TransactionManager] = None,
 ) -> None:
     """Delete a user. Admin only. Cannot delete last admin."""
     claims = get_optional_auth_claims_from_request(request, config)
@@ -185,6 +188,7 @@ async def delete_user(
                 actor_user_id=claims.user_id if claims else None,
             )
         )
+        await transaction_manager.commit()
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

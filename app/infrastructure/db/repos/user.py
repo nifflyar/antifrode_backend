@@ -40,10 +40,19 @@ class UserRepositoryImpl(IUserRepository, BaseSQLAlchemyRepo):
         return UserMapper.to_domain(user_model)
 
     async def update_user(self, user: User) -> User:
-        user_model = UserMapper.to_model(user)
-        merged_model = await self._session.merge(user_model)
-        await self._session.flush()
-        return UserMapper.to_domain(merged_model)
+        stmt = (
+            update(UserModel)
+            .where(UserModel.id == user.id)
+            .values(
+                full_name=user.full_name,
+                is_admin=user.is_admin,
+                is_active=user.is_active,
+                role=user.role,
+                updated_at=user.updated_at,
+            )
+        )
+        await self._session.execute(stmt)
+        return user
 
     async def delete_user(self, user_id: UserId) -> None:
         stmt = delete(UserModel).where(UserModel.id == user_id)

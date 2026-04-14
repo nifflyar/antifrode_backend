@@ -5,6 +5,7 @@ from .upload import UploadModel
 from .transaction import TransactionModel
 from .passenger import PassengerModel
 from .risk_concentration import RiskConcentrationModel
+from .audit import AuditLogModel
 
 __all__ = [
     "BaseORMModel",
@@ -14,4 +15,5 @@ __all__ = [
     "TransactionModel",
     "PassengerModel",
     "RiskConcentrationModel",
+    "AuditLogModel",
 ]

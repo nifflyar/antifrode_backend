@@ -12,7 +12,7 @@ class ListUsersInputDTO:
 
 @dataclass
 class UserOutputDTO:
-    id: int
+    id: str
     email: str
     full_name: str
     is_admin: bool
@@ -46,13 +46,13 @@ class ListUsersInteractor(Interactor[ListUsersInputDTO, ListUsersOutputDTO]):
         # Convert to output DTOs
         output_users = [
             UserOutputDTO(
-                id=user.id.value,
+                id=str(user.id.value),
                 email=user.email.value,
                 full_name=user.full_name,
                 is_admin=user.is_admin,
                 role=user.role.value,
                 is_active=user.is_active,
-                created_at=user.created_at.isoformat(),
+                created_at=user.created_at.isoformat() if user.created_at else "",
                 last_login_at=user.last_login_at.isoformat() if user.last_login_at else None,
             )
             for user in users

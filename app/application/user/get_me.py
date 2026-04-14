@@ -13,10 +13,11 @@ class GetUserProfileInputDTO:
 
 @dataclass
 class GetUserProfileOutputDTO:
-    id: int
+    id: str
     email: str
     full_name: str
     is_admin: bool
+    created_at: str
 
 
 class GetUserProfileInteractor(
@@ -33,8 +34,9 @@ class GetUserProfileInteractor(
 
 
         return GetUserProfileOutputDTO(
-            id=user.id.value,
+            id=str(user.id.value),
             email=user.email.value,
             full_name=user.full_name,
             is_admin=user.is_admin,
+            created_at=user.created_at.isoformat() if user.created_at else "",
         )
