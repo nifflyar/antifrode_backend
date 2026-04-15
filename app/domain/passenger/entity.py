@@ -79,7 +79,7 @@ class Passenger:
             self.last_seen_at = seen_at
 
     @classmethod
-    def create(cls, passenger_id: str, fio_clean: str,
+    def create(cls, passenger_id: int, fio_clean: str,
                first_seen_at: datetime,
                fake_fio_score: float = 0.0) -> "Passenger":
         return cls(

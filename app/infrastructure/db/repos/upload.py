@@ -28,8 +28,13 @@ class UploadRepositoryImpl(IUploadRepository, BaseSQLAlchemyRepo):
 
     async def create_upload(self, upload: Upload) -> None:
         model = UploadMapper.to_model(upload)
+        # Если id = 0 или None (как временный маркер), SQLAlchemy игнорирует это при autoflush/autoincrement,
+        # но безопаснее удалить его из state перед add:
+        if hasattr(model, 'id') and model.id == 0:
+            del model.id
         self._session.add(model)
         await self._session.flush()
+        upload.id = model.id
 
     async def update_upload(self, upload: Upload) -> None:
         stmt = (

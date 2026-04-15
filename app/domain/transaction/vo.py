@@ -11,6 +11,8 @@ class TransactionId(PositiveInteger):
 class OperationType(str, Enum):
     SALE = "sale"
     REFUND = "refund"
+    REDEEM = "redeem"
+    OTHER = "other"
 
 
 class DataSource(str, Enum):
