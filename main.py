@@ -9,6 +9,7 @@ from app.presentation.api.health.router import health_router
 from app.presentation.api.auth.router import auth_router
 from app.presentation.api.user.router import user_router
 from app.presentation.api.audit.router import audit_router
+from app.presentation.api.upload.router import upload_router
 from app.presentation.api.middleware import AuthMiddleware
 
 from app.presentation.api.exception import (
@@ -100,6 +101,7 @@ def create_app() -> FastAPI:
     app.include_router(auth_router)
     app.include_router(user_router)
     app.include_router(audit_router)
+    app.include_router(upload_router)
 
     app.add_exception_handler(ValidationError, validation_error_handler)
     app.add_exception_handler(ApplicationError, application_error_handler)

@@ -4,6 +4,8 @@ from .refresh_session import RefreshSessionModel
 from .upload import UploadModel
 from .transaction import TransactionModel
 from .passenger import PassengerModel
+from .passenger_features import PassengerFeaturesModel
+from .passenger_scores import PassengerScoreModel
 from .risk_concentration import RiskConcentrationModel
 from .audit import AuditLogModel
 
@@ -14,6 +16,8 @@ __all__ = [
     "UploadModel",
     "TransactionModel",
     "PassengerModel",
+    "PassengerFeaturesModel",
+    "PassengerScoreModel",
     "RiskConcentrationModel",
     "AuditLogModel",
 ]

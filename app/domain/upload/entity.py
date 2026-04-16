@@ -23,7 +23,7 @@ class Upload:
         self.status = UploadStatus.PROCESSING
 
     def mark_done(self) -> None:
-        if self.status != UploadStatus.PROCESSING:
+        if self.status not in (UploadStatus.PROCESSING, UploadStatus.PENDING):
             raise ValueError(f"Cannot complete: status is {self.status}")
         self.status = UploadStatus.DONE
 
