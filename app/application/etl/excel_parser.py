@@ -98,6 +98,11 @@ COLUMN_ALIASES: dict[str, str] = {
     "серия и номер": "doc_no",
     "№ документа": "doc_no",
     "номер билета": "doc_no",
+    # phone
+    "телефон": "phone",
+    "номер телефона": "phone",
+    "контакт": "phone",
+    "phone": "phone",
     # source
     "источник": "source",
     "source": "source",
@@ -122,6 +127,7 @@ class RawTransaction:
     fio: str | None = None
     iin: str | None = None
     doc_no: str | None = None
+    phone: str | None = None
     source: str = "excel_upload"
     # Порядковый номер строки для сообщений об ошибках
     _row_num: int = field(default=0, compare=False, repr=False)
@@ -288,6 +294,7 @@ class ExcelParser:
             fio=fio,
             iin=iin,
             doc_no=cls._str_or_none(get("doc_no")),
+            phone=cls._str_or_none(get("phone")),
             source=cls._str_or_none(get("source")) or "excel_upload",
             _row_num=row_num,
         )

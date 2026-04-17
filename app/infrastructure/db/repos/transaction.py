@@ -13,7 +13,7 @@ from app.infrastructure.db.models.passenger_scores import PassengerScoreModel
 from app.infrastructure.db.models.transaction import TransactionModel
 from app.infrastructure.db.repos.base import BaseSQLAlchemyRepo
 
-_SUSPICIOUS_BANDS = (RiskBand.HIGH.value, RiskBand.CRITICAL.value)
+_SUSPICIOUS_BANDS = (RiskBand.high.value, RiskBand.critical.value)
 
 
 class TransactionRepositoryImpl(ITransactionRepository, BaseSQLAlchemyRepo):
@@ -127,6 +127,53 @@ class TransactionRepositoryImpl(ITransactionRepository, BaseSQLAlchemyRepo):
         ]
         stmt = insert(TransactionModel).on_conflict_do_nothing(index_elements=["id"])
         await self._session.execute(stmt, rows)
+
+    async def get_risk_trend(
+        self, date_from: datetime | None = None, date_to: datetime | None = None
+    ) -> list[dict]:
+        """Возвращает статистику по дням: дата, общее кол-во, подозрительные."""
+        # Субзапрос для подсчета подозрительных транзакций
+        suspicious_sub = (
+            select(
+                func.date_trunc("day", TransactionModel.op_datetime).label("day"),
+                func.count(TransactionModel.id).label("suspicious_count"),
+            )
+            .join(
+                PassengerScoreModel,
+                TransactionModel.passenger_id == PassengerScoreModel.passenger_id,
+            )
+            .where(PassengerScoreModel.risk_band.in_(_SUSPICIOUS_BANDS))
+            .group_by("day")
+            .subquery()
+        )
+
+        # Основной запрос для общего кол-ва
+        day_expr = func.date_trunc("day", TransactionModel.op_datetime)
+        stmt = (
+            select(
+                day_expr.label("day"),
+                func.count(TransactionModel.id).label("total_count"),
+                func.coalesce(suspicious_sub.c.suspicious_count, 0).label("suspicious_count"),
+            )
+            .outerjoin(suspicious_sub, day_expr == suspicious_sub.c.day)
+        )
+
+        if date_from:
+            stmt = stmt.where(TransactionModel.op_datetime >= date_from)
+        if date_to:
+            stmt = stmt.where(TransactionModel.op_datetime <= date_to)
+
+        stmt = stmt.group_by(day_expr, suspicious_sub.c.suspicious_count).order_by(day_expr)
+        
+        result = await self._session.execute(stmt)
+        return [
+            {
+                "date": row.day,
+                "total_count": row.total_count,
+                "suspicious_count": row.suspicious_count,
+            }
+            for row in result.all()
+        ]
 
     # ── helpers ──────────────────────────────────────────────────────────────
 

@@ -10,7 +10,10 @@ class PassengerId(PositiveInteger):
 
 
 class RiskBand(str, Enum):
-    LOW = "low"
-    MEDIUM = "medium"
-    HIGH = "high"
-    CRITICAL = "critical"
+    low = "low"
+    medium = "medium"
+    high = "high"
+    critical = "critical"
+
+    def is_suspicious(self) -> bool:
+        return self in (RiskBand.high, RiskBand.critical)

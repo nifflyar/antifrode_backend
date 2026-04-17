@@ -7,6 +7,7 @@ from .passenger import PassengerRepositoryImpl
 from .passenger_features import PassengerFeatureRepositoryImpl
 from .passenger_scores import PassengerScoreRepositoryImpl
 from .risk_concentration import RiskConcentrationRepositoryImpl
+from .scoring_job import ScoringJobRepositoryImpl
 
 __all__ = [
     "UserRepositoryImpl",
@@ -18,4 +19,5 @@ __all__ = [
     "PassengerFeatureRepositoryImpl",
     "PassengerScoreRepositoryImpl",
     "RiskConcentrationRepositoryImpl",
+    "ScoringJobRepositoryImpl",
 ]

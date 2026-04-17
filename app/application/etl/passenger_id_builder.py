@@ -35,6 +35,7 @@ class PassengerIdBuilder:
         iin: str | None,
         fio_clean: str,
         doc_no: str | None = None,
+        phone: str | None = None,
     ) -> int:
         """Возвращает детерминированный int64 passenger_id.
 
@@ -46,17 +47,23 @@ class PassengerIdBuilder:
         Returns:
             Положительный int64, уникальный для данной комбинации.
         """
-        key = self._build_key(iin, fio_clean, doc_no)
+        key = self._build_key(iin, fio_clean, doc_no, phone)
         return self._hash_to_int64(key)
 
     # ── Internals ─────────────────────────────────────────────────────────────
 
     @staticmethod
-    def _build_key(iin: str | None, fio_clean: str, doc_no: str | None) -> str:
+    def _build_key(
+        iin: str | None,
+        fio_clean: str,
+        doc_no: str | None,
+        phone: str | None,
+    ) -> str:
         """Строит строчный ключ по стратегии приоритетов."""
         iin_clean = iin.strip() if iin else ""
         fio = fio_clean.strip().upper()
         doc = doc_no.strip().upper() if doc_no else ""
+        ph = phone.strip() if phone else ""
 
         # Приоритет 1: IIN
         if iin_clean and len(iin_clean) >= 10:
@@ -66,14 +73,18 @@ class PassengerIdBuilder:
         if fio and doc:
             return f"fio_doc:{fio}|{doc}"
 
-        # Приоритет 3: только ФИО (менее надёжно)
+        # Приоритет 3: ФИО + телефон
+        if fio and ph:
+            return f"fio_ph:{fio}|{ph}"
+
+        # Приоритет 4: только ФИО (менее надёжно)
         if fio:
             return f"fio:{fio}"
 
         # Крайний случай — будет дубль, но лучше, чем упасть
         raise ValueError(
             "Недостаточно данных для построения passenger_id: "
-            f"iin={iin!r}, fio_clean={fio_clean!r}, doc_no={doc_no!r}"
+            f"iin={iin!r}, fio_clean={fio_clean!r}, doc_no={doc_no!r}, phone={phone!r}"
         )
 
     @staticmethod

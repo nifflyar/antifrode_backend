@@ -32,6 +32,7 @@ WORKDIR ${APP_HOME}
 RUN apt-get update && apt-get install -y \
     libpq5 \
     curl \
+    netcat-openbsd \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements from builder
@@ -44,7 +45,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Create non-root user for security
-RUN useradd -m -u 1000 appuser && chown -R appuser:appuser ${APP_HOME}
+# Нам нужно установить права на entrypoint.sh ПЕРЕД переключением на appuser
+RUN chmod +x /app/scripts/entrypoint.sh && \
+    useradd -m -u 1000 appuser && chown -R appuser:appuser ${APP_HOME}
+
 USER appuser
 
 # Health check
@@ -53,5 +57,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 
 EXPOSE 8000
 
-# Run application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run entrypoint script
+ENTRYPOINT ["/app/scripts/entrypoint.sh"]

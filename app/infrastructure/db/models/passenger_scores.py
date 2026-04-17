@@ -35,7 +35,7 @@ class PassengerScoreModel(BaseORMModel):
     risk_band: Mapped[RiskBand] = mapped_column(
         Enum(RiskBand, name="riskband", create_type=False),
         nullable=False,
-        default=RiskBand.LOW,
+        default=RiskBand.low,
         index=True,
     )
     top_reasons: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)

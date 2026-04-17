@@ -27,3 +27,7 @@ telemetry:
   sentry_dsn: null
   sentry_traces_sample_rate: 1.0
   sentry_ca_certs: null
+
+ml:
+  url: "http://ml-service:8001"
+  timeout: 60

@@ -10,6 +10,7 @@ from app.infrastructure.db.repos import (
     PassengerFeatureRepositoryImpl,
     PassengerScoreRepositoryImpl,
     RiskConcentrationRepositoryImpl,
+    ScoringJobRepositoryImpl,
 )
 
 
@@ -25,4 +26,5 @@ class HolderDao:
         self.passenger_feature_repo = PassengerFeatureRepositoryImpl(session)
         self.passenger_score_repo = PassengerScoreRepositoryImpl(session)
         self.risk_concentration_repo = RiskConcentrationRepositoryImpl(session)
+        self.scoring_job_repo = ScoringJobRepositoryImpl(session)
 

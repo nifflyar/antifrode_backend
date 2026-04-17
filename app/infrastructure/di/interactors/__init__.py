@@ -5,6 +5,8 @@ from .user import UserInteractorProvider
 from .audit import AuditInteractorProvider
 from .etl import EtlProvider
 from .upload import UploadInteractorProvider
+from .scoring import ScoringInteractorProvider
+from .dashboard import DashboardInteractorProvider
 
 interactor_providers: list[type[Provider]] = [
     AuthInteractorProvider,
@@ -12,6 +14,8 @@ interactor_providers: list[type[Provider]] = [
     AuditInteractorProvider,
     EtlProvider,
     UploadInteractorProvider,
+    ScoringInteractorProvider,
+    DashboardInteractorProvider,
 ]
 
 __all__ = [
@@ -20,5 +24,7 @@ __all__ = [
     "AuditInteractorProvider",
     "EtlProvider",
     "UploadInteractorProvider",
+    "ScoringInteractorProvider",
+    "DashboardInteractorProvider",
     "interactor_providers",
 ]
