@@ -53,3 +53,12 @@ class ITransactionRepository(ABC):
     async def create_batch(self, transactions: list[Transaction]) -> None:
         """Bulk insert транзакций — используется ETL-пайплайном."""
         ...
+
+    @abstractmethod
+    async def get_daily_stats(
+        self,
+        date_from: datetime | None = None,
+        date_to: datetime | None = None,
+    ) -> list[dict]:
+        """Get daily aggregated stats: date, total_ops, highrisk_ops."""
+        ...

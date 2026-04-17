@@ -50,10 +50,17 @@ class TelemetryConfig:
 
 
 @dataclass
+class MlServiceConfig:
+    url: Annotated[SecretStr, HttpUrl()]
+    timeout: Annotated[int, Gt(value=0)] = 30
+
+
+@dataclass
 class Config:
     postgres: PostgresConfig
     auth: AuthConfig
     telemetry: TelemetryConfig
+    ml_service: MlServiceConfig
     environment: str = "development"
 
 

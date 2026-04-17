@@ -32,8 +32,9 @@ class PassengerScoreModel(BaseORMModel):
     )
     # create_type=False: тип riskband создаётся миграцией вручную (DO/EXCEPTION),
     # чтобы избежать ошибки "type already exists" при повторном запуске.
+    # values_callable uses enum.value instead of enum.name
     risk_band: Mapped[RiskBand] = mapped_column(
-        Enum(RiskBand, name="riskband", create_type=False),
+        Enum(RiskBand, name="riskband", create_type=False, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
         default=RiskBand.LOW,
         index=True,

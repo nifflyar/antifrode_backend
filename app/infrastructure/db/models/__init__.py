@@ -8,6 +8,7 @@ from .passenger_features import PassengerFeaturesModel
 from .passenger_scores import PassengerScoreModel
 from .risk_concentration import RiskConcentrationModel
 from .audit import AuditLogModel
+from .scoring_job import ScoringJobModel
 
 __all__ = [
     "BaseORMModel",
@@ -20,4 +21,5 @@ __all__ = [
     "PassengerScoreModel",
     "RiskConcentrationModel",
     "AuditLogModel",
+    "ScoringJobModel",
 ]

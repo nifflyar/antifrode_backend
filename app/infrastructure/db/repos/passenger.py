@@ -1,4 +1,4 @@
-from sqlalchemy import func, select, update
+from sqlalchemy import func, select, update, cast, String
 
 from app.domain.passenger.entity import Passenger
 from app.domain.passenger.repository import IPassengerRepository
@@ -68,7 +68,7 @@ class PassengerRepositoryImpl(IPassengerRepository, BaseSQLAlchemyRepo):
             stmt = (
                 select(func.count(PassengerModel.id))
                 .join(PassengerScoreModel, PassengerModel.id == PassengerScoreModel.passenger_id)
-                .where(PassengerScoreModel.risk_band == risk_band.value)
+                .where(cast(PassengerScoreModel.risk_band, String) == risk_band.value)
             )
         result = await self._session.execute(stmt)
         return result.scalar_one() or 0

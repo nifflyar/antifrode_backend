@@ -14,3 +14,6 @@ class RiskBand(str, Enum):
     MEDIUM = "medium"
     HIGH = "high"
     CRITICAL = "critical"
+
+    def is_suspicious(self) -> bool:
+        return self in (RiskBand.HIGH, RiskBand.CRITICAL)

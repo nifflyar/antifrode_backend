@@ -13,9 +13,11 @@ class RiskConcentrationRepositoryImpl(IRiskConcentrationRepository, BaseSQLAlche
     async def get_all_by_dimension(
         self, dimension_type: DimensionType
     ) -> list[RiskConcentration]:
+        from sqlalchemy import cast, String
+
         stmt = (
             select(RiskConcentrationModel)
-            .where(RiskConcentrationModel.dimension_type == dimension_type.value)
+            .where(cast(RiskConcentrationModel.dimension_type, String) == dimension_type.value)
             .order_by(RiskConcentrationModel.lift_vs_base.desc())
         )
         result = await self._session.execute(stmt)
@@ -24,9 +26,11 @@ class RiskConcentrationRepositoryImpl(IRiskConcentrationRepository, BaseSQLAlche
     async def get_top_dimension(
         self, dimension_type: str, top_n: int = 1
     ) -> RiskConcentration | None:
+        from sqlalchemy import cast, String
+
         stmt = (
             select(RiskConcentrationModel)
-            .where(RiskConcentrationModel.dimension_type == dimension_type)
+            .where(cast(RiskConcentrationModel.dimension_type, String) == dimension_type)
             .order_by(RiskConcentrationModel.lift_vs_base.desc())
             .limit(top_n)
         )

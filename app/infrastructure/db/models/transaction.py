@@ -22,7 +22,7 @@ class TransactionModel(BaseORMModel):
     upload_id: Mapped[UploadId] = mapped_column(UploadIdType, nullable=False, index=True)
     source: Mapped[str] = mapped_column(String(50), nullable=False)
     op_type: Mapped[OperationType] = mapped_column(
-        Enum(OperationType, name="operationtype", create_type=True),
+        Enum(OperationType, name="operationtype", create_type=True, native_enum=False),
         nullable=False,
         index=True,
     )

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, cast, String, case
 from sqlalchemy.dialects.postgresql import insert
 
 from app.domain.passenger.vo import PassengerId, RiskBand
@@ -66,7 +66,7 @@ class TransactionRepositoryImpl(ITransactionRepository, BaseSQLAlchemyRepo):
                 PassengerScoreModel,
                 TransactionModel.passenger_id == PassengerScoreModel.passenger_id,
             )
-            .where(PassengerScoreModel.risk_band.in_(_SUSPICIOUS_BANDS))
+            .where(cast(PassengerScoreModel.risk_band, String).in_(_SUSPICIOUS_BANDS))
         )
         stmt = self._apply_filters(stmt, train_no, cashdesk, terminal, date_from, date_to)
         stmt = stmt.order_by(TransactionModel.op_datetime.desc()).limit(limit).offset(offset)
@@ -87,7 +87,7 @@ class TransactionRepositoryImpl(ITransactionRepository, BaseSQLAlchemyRepo):
                 PassengerScoreModel,
                 TransactionModel.passenger_id == PassengerScoreModel.passenger_id,
             )
-            .where(PassengerScoreModel.risk_band.in_(_SUSPICIOUS_BANDS))
+            .where(cast(PassengerScoreModel.risk_band, String).in_(_SUSPICIOUS_BANDS))
         )
         stmt = self._apply_filters(stmt, train_no, cashdesk, terminal, date_from, date_to)
         result = await self._session.execute(stmt)
@@ -107,7 +107,7 @@ class TransactionRepositoryImpl(ITransactionRepository, BaseSQLAlchemyRepo):
                 "id": tx.id.value,
                 "upload_id": tx.upload_id.value,
                 "source": tx.source,
-                "op_type": tx.op_type.value,
+                "op_type": tx.op_type.value if hasattr(tx.op_type, 'value') else str(tx.op_type).lower(),
                 "op_datetime": tx.op_datetime,
                 "dep_datetime": tx.dep_datetime,
                 "train_no": tx.train_no,
@@ -127,6 +127,50 @@ class TransactionRepositoryImpl(ITransactionRepository, BaseSQLAlchemyRepo):
         ]
         stmt = insert(TransactionModel).on_conflict_do_nothing(index_elements=["id"])
         await self._session.execute(stmt, rows)
+
+    async def get_daily_stats(
+        self,
+        date_from: datetime | None = None,
+        date_to: datetime | None = None,
+    ) -> list[dict]:
+        """Get daily aggregated stats: date, total_ops, highrisk_ops."""
+        from sqlalchemy import Date
+
+        stmt = (
+            select(
+                cast(TransactionModel.op_datetime, Date).label("date"),
+                func.count(TransactionModel.id).label("total_ops"),
+                func.sum(
+                    case(
+                        (cast(PassengerScoreModel.risk_band, String).in_(_SUSPICIOUS_BANDS), 1),
+                        else_=0,
+                    )
+                ).label("highrisk_ops"),
+            )
+            .outerjoin(
+                PassengerScoreModel,
+                TransactionModel.passenger_id == PassengerScoreModel.passenger_id,
+            )
+        )
+
+        if date_from:
+            stmt = stmt.where(TransactionModel.op_datetime >= date_from)
+        if date_to:
+            stmt = stmt.where(TransactionModel.op_datetime <= date_to)
+
+        stmt = stmt.group_by(cast(TransactionModel.op_datetime, Date)).order_by(
+            "date"
+        )
+
+        result = await self._session.execute(stmt)
+        return [
+            {
+                "date": row.date.isoformat() if row.date else None,
+                "total_ops": row.total_ops or 0,
+                "highrisk_ops": row.highrisk_ops or 0,
+            }
+            for row in result.all()
+        ]
 
     # ── helpers ──────────────────────────────────────────────────────────────
 

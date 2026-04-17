@@ -32,10 +32,15 @@ WORKDIR ${APP_HOME}
 RUN apt-get update && apt-get install -y \
     libpq5 \
     curl \
+    build-essential \
+    python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements from builder
 COPY --from=builder /app/requirements.txt .
+
+# Install setuptools first (required for building packages from source)
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt

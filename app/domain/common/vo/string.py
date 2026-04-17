@@ -1,16 +1,9 @@
 from app.domain.common.vo.base import BaseValueObject
 
 
-class NonEmptyString(BaseValueObject[str]):
+class StringVO(BaseValueObject[str]):
+    """Base string value object."""
     __slots__ = ()
-
-    min_length: int = 1
-    max_length: int = 255
-
-    @classmethod
-    def _validate(cls, value: str) -> None:
-        cls._validate_type(value)
-        cls._validate_length(value)
 
     @classmethod
     def _validate_type(cls, value: str) -> None:
@@ -19,6 +12,22 @@ class NonEmptyString(BaseValueObject[str]):
                 f"{cls.__name__} value must be a str, got {type(value).__name__!r}"
             )
             raise TypeError(error_msg)
+
+    @classmethod
+    def _validate(cls, value: str) -> None:
+        cls._validate_type(value)
+
+
+class NonEmptyString(StringVO):
+    __slots__ = ()
+
+    min_length: int = 1
+    max_length: int = 255
+
+    @classmethod
+    def _validate(cls, value: str) -> None:
+        super()._validate(value)
+        cls._validate_length(value)
 
     @classmethod
     def _validate_length(cls, value: str) -> None:
