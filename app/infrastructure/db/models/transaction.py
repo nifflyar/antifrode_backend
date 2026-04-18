@@ -46,6 +46,7 @@ class TransactionModel(BaseORMModel):
     order_no: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
     dep_station: Mapped[str | None] = mapped_column(String(255), nullable=True)
     arr_station: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    route: Mapped[str | None] = mapped_column(String(512), nullable=True)
     passenger_id: Mapped[PassengerId | None] = mapped_column(
         PassengerIdType, nullable=True, index=True
     )

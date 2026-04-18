@@ -248,6 +248,10 @@ class EtlPipeline:
                     fio=raw.fio,
                     iin=raw.iin,
                     doc_no=raw.doc_no,
+                    order_no=raw.order_no,
+                    dep_station=raw.dep_station,
+                    arr_station=raw.arr_station,
+                    route=raw.route,
                     passenger_id=passenger_id,
                 )
                 transactions.append(tx)

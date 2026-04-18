@@ -39,6 +39,7 @@ class PassengerScore:
     risk_band: RiskBand = RiskBand.low
     top_reasons: list[str] = field(default_factory=list)
     seat_blocking_flag: bool = False
+    is_manual: bool = False
     scored_at: datetime | None = None
 
     def is_critical(self) -> bool:

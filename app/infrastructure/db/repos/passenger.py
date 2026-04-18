@@ -1,4 +1,5 @@
 from sqlalchemy import func, select, update
+from sqlalchemy.dialects.postgresql import insert
 
 from app.domain.passenger.entity import Passenger
 from app.domain.passenger.repository import IPassengerRepository
@@ -19,57 +20,54 @@ class PassengerRepositoryImpl(IPassengerRepository, BaseSQLAlchemyRepo):
             return None
         passenger = PassengerMapper.to_domain(model)
         await self._load_score(passenger)
+        await self._load_features(passenger)
         return passenger
 
     async def get_all(
         self,
         risk_band: RiskBand | None = None,
-        channel: str | None = None,
-        cashdesk: str | None = None,
-        terminal: str | None = None,
-        date_from: str | None = None,
-        date_to: str | None = None,
-        seat_blocking_only: bool = False,
+        search: str | None = None,
         limit: int = 50,
         offset: int = 0,
     ) -> list[Passenger]:
         stmt = select(PassengerModel)
 
-        # Если нужна фильтрация по risk_band или seat_blocking — JOIN с passenger_scores
-        needs_score_join = risk_band is not None or seat_blocking_only
-        if needs_score_join:
+        if search:
+            s = f"%{search}%"
+            stmt = stmt.where(
+                (PassengerModel.fio_clean.ilike(s)) | (PassengerModel.iin.ilike(s))
+            )
+
+        if risk_band is not None:
             stmt = stmt.join(
                 PassengerScoreModel,
                 PassengerModel.id == PassengerScoreModel.passenger_id,
-                isouter=False,
-            )
-            if risk_band is not None:
-                stmt = stmt.where(PassengerScoreModel.risk_band == risk_band.value)
-            if seat_blocking_only:
-                stmt = stmt.where(PassengerScoreModel.seat_blocking_flag.is_(True))
-
-        if date_from:
-            stmt = stmt.where(PassengerModel.last_seen_at >= date_from)
-        if date_to:
-            stmt = stmt.where(PassengerModel.last_seen_at <= date_to)
+            ).where(PassengerScoreModel.risk_band == risk_band.value)
 
         stmt = stmt.order_by(PassengerModel.last_seen_at.desc()).limit(limit).offset(offset)
         result = await self._session.execute(stmt)
         passengers = [PassengerMapper.to_domain(m) for m in result.scalars().all()]
 
-        # Подгружаем скоры одним запросом
+        # Подгружаем скоры и фичи одним запросом
         await self._load_scores_bulk(passengers)
+        await self._load_features_bulk(passengers)
         return passengers
 
-    async def count(self, risk_band: RiskBand | None = None) -> int:
-        if risk_band is None:
-            stmt = select(func.count(PassengerModel.id))
-        else:
-            stmt = (
-                select(func.count(PassengerModel.id))
-                .join(PassengerScoreModel, PassengerModel.id == PassengerScoreModel.passenger_id)
-                .where(PassengerScoreModel.risk_band == risk_band.value)
+    async def count(self, risk_band: RiskBand | None = None, search: str | None = None) -> int:
+        stmt = select(func.count(PassengerModel.id))
+        
+        if search:
+            s = f"%{search}%"
+            stmt = stmt.where(
+                (PassengerModel.fio_clean.ilike(s)) | (PassengerModel.iin.ilike(s))
             )
+
+        if risk_band is not None:
+            stmt = stmt.join(
+                PassengerScoreModel,
+                PassengerModel.id == PassengerScoreModel.passenger_id,
+            ).where(PassengerScoreModel.risk_band == risk_band.value)
+
         result = await self._session.execute(stmt)
         return result.scalar_one() or 0
 
@@ -106,6 +104,17 @@ class PassengerRepositoryImpl(IPassengerRepository, BaseSQLAlchemyRepo):
         if score_model:
             passenger.score = PassengerScoreMapper.to_domain(score_model)
 
+    async def _load_features(self, passenger: Passenger) -> None:
+        from app.infrastructure.db.models.passenger_features import PassengerFeaturesModel
+        from app.infrastructure.db.mappers.passenger import PassengerFeaturesMapper
+        stmt = select(PassengerFeaturesModel).where(
+            PassengerFeaturesModel.passenger_id == passenger.id
+        )
+        result = await self._session.execute(stmt)
+        feature_model = result.scalar_one_or_none()
+        if feature_model:
+            passenger.features = PassengerFeaturesMapper.to_domain(feature_model)
+
     async def _load_scores_bulk(self, passengers: list[Passenger]) -> None:
         if not passengers:
             return
@@ -119,3 +128,19 @@ class PassengerRepositoryImpl(IPassengerRepository, BaseSQLAlchemyRepo):
             score_model = score_map.get(passenger.id.value)
             if score_model:
                 passenger.score = PassengerScoreMapper.to_domain(score_model)
+
+    async def _load_features_bulk(self, passengers: list[Passenger]) -> None:
+        if not passengers:
+            return
+        from app.infrastructure.db.models.passenger_features import PassengerFeaturesModel
+        from app.infrastructure.db.mappers.passenger import PassengerFeaturesMapper
+        ids = [p.id.value for p in passengers]
+        stmt = select(PassengerFeaturesModel).where(
+            PassengerFeaturesModel.passenger_id.in_(ids)
+        )
+        result = await self._session.execute(stmt)
+        feature_map = {m.passenger_id.value: m for m in result.scalars().all()}
+        for passenger in passengers:
+            feature_model = feature_map.get(passenger.id.value)
+            if feature_model:
+                passenger.features = PassengerFeaturesMapper.to_domain(feature_model)

@@ -10,6 +10,8 @@ from app.domain.scoring.repository import IScoringJobRepository
 from app.domain.scoring.vo import ScoringJobId
 from app.infrastructure.ml_client import MlServiceClient, MlScoringResult
 from app.application.common.transaction import TransactionManager
+from app.domain.transaction.repository import ITransactionRepository
+from app.domain.risk.repository import IRiskConcentrationRepository
 
 logger = logging.getLogger(__name__)
 
@@ -27,12 +29,16 @@ class ProcessScoringResultsInteractor:
         feature_repo: IPassengerFeatureRepository,
         score_repo: IPassengerScoreRepository,
         scoring_job_repo: IScoringJobRepository,
+        transaction_repo: ITransactionRepository,
+        risk_repo: IRiskConcentrationRepository,
         transaction_manager: TransactionManager,
     ):
         self._ml_client = ml_client
         self._feature_repo = feature_repo
         self._score_repo = score_repo
         self._scoring_job_repo = scoring_job_repo
+        self._tx_repo = transaction_repo
+        self._risk_repo = risk_repo
         self._tx_manager = transaction_manager
 
     async def execute(self, upload_id: int, job_id: ScoringJobId | None = None) -> None:
@@ -90,15 +96,19 @@ class ProcessScoringResultsInteractor:
             await self._feature_repo.bulk_upsert(features_to_save)
             await self._score_repo.bulk_upsert(scores_to_save)
             
+            # 4. РАСЧЕТ КОНЦЕНТРАЦИЙ РРИСКОВ
+            logger.info("Recalculating risk concentrations...")
+            await self._recalculate_concentrations()
+            
             if job:
                 job.mark_done()
                 await self._scoring_job_repo.update(job)
             
             await self._tx_manager.commit()
-            logger.info(f"Successfully processed and saved scoring for {len(ml_results)} passengers")
+            logger.info(f"Successfully processed and saved scoring and concentrations for {len(ml_results)} passengers")
 
         except Exception as e:
-            logger.error(f"Failed to process scoring results for upload_id={upload_id}: {e}")
+            logger.error(f"Failed to process scoring results: {e}")
             await self._tx_manager.rollback()
             if job:
                 try:
@@ -108,3 +118,47 @@ class ProcessScoringResultsInteractor:
                 except Exception as update_error:
                     logger.error(f"Failed to update job status to FAILED: {update_error}")
             raise
+
+    async def _recalculate_concentrations(self) -> None:
+        """Пересчитывает концентрацию рисков по всем измерениям."""
+        from app.domain.risk.vo import DimensionType
+        from app.domain.risk.entity import RiskConcentration
+        import hashlib, struct
+        
+        # Получаем базовую долю подозрительных операций в системе
+        total_all = await self._tx_repo.count_all()
+        suspicious_all = await self._tx_repo.count_suspicious()
+        base_share = suspicious_all / total_all if total_all > 0 else 0.0
+        
+        dimensions = [
+            DimensionType.CHANNEL,
+            DimensionType.AGGREGATOR,
+            DimensionType.TERMINAL,
+            DimensionType.CASHDESK
+        ]
+        
+        concentrations_to_save = []
+        
+        for dtype in dimensions:
+            # Получаем статистику по колонке
+            stats = await self._tx_repo.get_dimension_stats(dtype.value)
+            
+            for row in stats:
+                val = str(row["value"])
+                # Генерируем ID: hash(type + value)
+                id_str = f"{dtype.value}:{val}"
+                id_int = struct.unpack(">Q", hashlib.sha256(id_str.encode()).digest()[:8])[0] & 0x7FFFFFFFFFFFFFFF
+                
+                item = RiskConcentration.create(
+                    concentration_id=id_int,
+                    dimension_type=dtype,
+                    dimension_value=val,
+                    total_ops=row["total_count"],
+                    highrisk_ops=row["suspicious_count"],
+                    base_share=base_share
+                )
+                concentrations_to_save.append(item)
+        
+        if concentrations_to_save:
+            await self._risk_repo.save_batch(concentrations_to_save)
+            logger.info(f"Saved {len(concentrations_to_save)} risk concentration hotspots")

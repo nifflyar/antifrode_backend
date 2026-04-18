@@ -7,6 +7,9 @@ from .etl import EtlProvider
 from .upload import UploadInteractorProvider
 from .scoring import ScoringInteractorProvider
 from .dashboard import DashboardInteractorProvider
+from .passenger import PassengerInteractorProvider
+from .operations import OperationsInteractorProvider
+from .reports import ReportsInteractorProvider
 
 interactor_providers: list[type[Provider]] = [
     AuthInteractorProvider,
@@ -16,6 +19,9 @@ interactor_providers: list[type[Provider]] = [
     UploadInteractorProvider,
     ScoringInteractorProvider,
     DashboardInteractorProvider,
+    PassengerInteractorProvider,
+    OperationsInteractorProvider,
+    ReportsInteractorProvider,
 ]
 
 __all__ = [
@@ -26,5 +32,6 @@ __all__ = [
     "UploadInteractorProvider",
     "ScoringInteractorProvider",
     "DashboardInteractorProvider",
+    "PassengerInteractorProvider",
     "interactor_providers",
 ]

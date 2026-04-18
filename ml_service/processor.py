@@ -53,7 +53,7 @@ class ScoringProcessor:
         # 4. Агрегация по пассажирам
         agg = df.groupby("passenger_id").agg(
             total_tickets=("id", "count"),
-            refund_cnt=("op_type", lambda x: (x == "refund").sum()),
+            refund_cnt=("op_type", lambda x: (x.str.lower() == "refund").sum()),
             night_tickets=("is_night", "sum"),
             late_refunds=("late_refund", "sum"),
             fake_fio=("p_fake_fio", "max")
@@ -106,9 +106,9 @@ class ScoringProcessor:
         return agg
 
     def get_risk_band(self, score: float) -> str:
-        if score > 80: return "critical"
-        if score > 60: return "high"
-        if score > 40: return "medium"
+        if score > 75: return "critical"
+        if score > 50: return "high"
+        if score > 30: return "medium"
         return "low"
 
     async def process(self, upload_id: int) -> List[Dict[str, Any]]:

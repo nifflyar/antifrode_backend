@@ -12,6 +12,10 @@ from app.presentation.api.audit.router import audit_router
 from app.presentation.api.upload.router import upload_router
 from app.presentation.api.scoring.router import scoring_router
 from app.presentation.api.dashboard.router import dashboard_router
+from app.presentation.api.passenger.router import passenger_router
+from app.presentation.api.operations.router import operations_router
+from app.presentation.api.risk.router import risk_router
+from app.presentation.api.reports.router import reports_router
 from app.presentation.api.middleware import AuthMiddleware
 
 from app.presentation.api.exception import (
@@ -106,6 +110,10 @@ def create_app() -> FastAPI:
     app.include_router(upload_router)
     app.include_router(scoring_router)
     app.include_router(dashboard_router)
+    app.include_router(passenger_router)
+    app.include_router(operations_router)
+    app.include_router(risk_router)
+    app.include_router(reports_router)
 
 
     app.add_exception_handler(ValidationError, validation_error_handler)

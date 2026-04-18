@@ -42,6 +42,9 @@ class PassengerScoreModel(BaseORMModel):
     seat_blocking_flag: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, index=True
     )
+    is_manual: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, index=True
+    )
     scored_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), server_default=func.now(), nullable=False, index=True
     )

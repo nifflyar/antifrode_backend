@@ -8,6 +8,8 @@ from app.domain.passenger.feature_repository import IPassengerFeatureRepository
 from app.domain.passenger.score_repository import IPassengerScoreRepository
 from app.domain.scoring.repository import IScoringJobRepository
 from app.domain.upload.repository import IUploadRepository
+from app.domain.transaction.repository import ITransactionRepository
+from app.domain.risk.repository import IRiskConcentrationRepository
 from app.infrastructure.ml_client import MlServiceClient
 
 
@@ -19,6 +21,8 @@ class ScoringInteractorProvider(Provider):
         feature_repo: IPassengerFeatureRepository,
         score_repo: IPassengerScoreRepository,
         scoring_job_repo: IScoringJobRepository,
+        transaction_repo: ITransactionRepository,
+        risk_repo: IRiskConcentrationRepository,
         transaction_manager: TransactionManager,
     ) -> ProcessScoringResultsInteractor:
         return ProcessScoringResultsInteractor(
@@ -26,6 +30,8 @@ class ScoringInteractorProvider(Provider):
             feature_repo=feature_repo,
             score_repo=score_repo,
             scoring_job_repo=scoring_job_repo,
+            transaction_repo=transaction_repo,
+            risk_repo=risk_repo,
             transaction_manager=transaction_manager,
         )
 

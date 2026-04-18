@@ -54,3 +54,4 @@ typing-inspection==0.4.2
 uvicorn==0.44.0
 openpyxl==3.1.5
 zipp==3.23.0
+fpdf2==2.8.7  

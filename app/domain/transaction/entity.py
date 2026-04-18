@@ -38,7 +38,11 @@ class Transaction:
     fio: str | None
     iin: str | None
     doc_no: str | None
-    passenger_id: PassengerId | None
+    order_no: str | None = None
+    dep_station: str | None = None
+    arr_station: str | None = None
+    route: str | None = None
+    passenger_id: PassengerId | None = None
 
 
     def is_refund(self) -> bool:

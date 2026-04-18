@@ -7,7 +7,7 @@ class GetRiskConcentrationInteractor:
 
     async def execute(self, dimension_type: str):
         try:
-            dtype = DimensionType(dimension_type.upper())
+            dtype = DimensionType(dimension_type.lower())
         except ValueError:
             raise ValueError(f"Invalid dimension type: {dimension_type}. Supported: CHANNEL, AGGREGATOR, TERMINAL, CASHDESK")
 

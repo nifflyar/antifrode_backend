@@ -17,6 +17,9 @@ _RU_TO_LAT: dict[str, str] = {
     "у": "u", "ф": "f", "х": "kh", "ц": "ts", "ч": "ch",
     "ш": "sh", "щ": "sch", "ъ": "", "ы": "y", "ь": "",
     "э": "e", "ю": "yu", "я": "ya",
+    # Казахские буквы
+    "ә": "ae", "ғ": "gh", "қ": "q", "ң": "ng", "ө": "oe",
+    "ұ": "u", "ү": "ue", "і": "i", "һ": "h",
 }
 
 # Токены, которые считаются мусором (не имя)
@@ -24,8 +27,8 @@ _NOISE_TOKENS: frozenset[str] = frozenset(
     {"г", "гр", "господин", "госпожа", "mr", "mrs", "ms", "dr", "none", "null", "-", ""}
 )
 
-# Regex: только буквы (кириллица + латиница) и пробелы
-_ALLOWED = re.compile(r"[^а-яёa-z\s]", re.IGNORECASE)
+# Regex: только буквы (кириллица + латиница + казахские) и пробелы
+_ALLOWED = re.compile(r"[^а-яёәғқңөұүіһa-z\s]", re.IGNORECASE)
 
 
 class FioCleaner:
@@ -91,35 +94,39 @@ class FioCleaner:
     @staticmethod
     def fake_fio_score(fio_clean: str) -> float:
         """Эвристическая оценка вероятности фиктивного ФИО (0.0 – 1.0).
-
-        Признаки фальши:
-        - Слишком короткое (< 5 символов без пробелов)
-        - Все части одинаковые (ИВАН ИВАН ИВАН)
-        - Содержит цифры после чистки
-        - Менее 2 токенов
+        
+        Синхронизировано с Notebook 13:
+        - Junk: aaa, iii, test, qwerty
+        - Unique chars: < 4
+        - Length: < 5
         """
         if not fio_clean:
             return 1.0
 
-        tokens = fio_clean.split()
+        fio_lower = fio_clean.lower()
         score = 0.0
 
-        # Меньше 2 слов
-        if len(tokens) < 2:
-            score += 0.5
-
-        # Все части одинаковые
-        if len(tokens) > 1 and len(set(tokens)) == 1:
+        # 1. Мусор из ноутбука
+        junk_tokens = ["aaa", "иии", "test", "qwerty", "test01", "тест"]
+        if any(token in fio_lower for token in junk_tokens):
             score += 0.8
 
-        # Общая длина слишком маленькая
+        # 2. Мало уникальных букв (энтропия)
+        unique_chars = {ch for ch in fio_lower if ch.isalpha()}
+        if len(unique_chars) <= 3:
+            score += 0.7
+
+        # 3. Структурные признаки (бэкенд)
+        tokens = fio_clean.split()
+        if len(tokens) < 2:
+            score += 0.4
+        if len(tokens) > 1 and len(set(tokens)) == 1:
+            score += 0.8
+        
+        # 4. Общая длина
         total_len = sum(len(t) for t in tokens)
         if total_len < 5:
-            score += 0.4
-
-        # Содержит цифры (после чистки — значит намеренно)
-        if re.search(r"\d", fio_clean):
-            score += 0.3
+            score += 0.5
 
         return min(score, 1.0)
 

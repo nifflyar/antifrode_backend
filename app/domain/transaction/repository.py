@@ -32,7 +32,7 @@ class ITransactionRepository(ABC):
         date_to: datetime | None = None,
         limit: int = 100,
         offset: int = 0,
-    ) -> list[Transaction]:
+    ) -> list[tuple[Transaction, RiskBand]]:
         """Транзакции пассажиров с risk_band IN (HIGH, CRITICAL)."""
         ...
 
@@ -60,3 +60,6 @@ class ITransactionRepository(ABC):
     ) -> list[dict]:
         """Возвращает статистику по дням: дата, общее кол-во, подозрительные."""
         ...
+
+    @abstractmethod
+    async def get_dimension_stats(self, dimension_column: str) -> list[dict]: ...
