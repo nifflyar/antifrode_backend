@@ -24,7 +24,7 @@ class ScoringJobModel(BaseORMModel):
         nullable=False,
     )
     status: Mapped[ScoringStatus] = mapped_column(
-        Enum(ScoringStatus, name="scoringstatus", create_type=True),
+        Enum(ScoringStatus, name="scoringstatus", create_type=True, native_enum=False),
         nullable=False,
         default=ScoringStatus.PENDING,
     )

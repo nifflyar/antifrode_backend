@@ -18,11 +18,13 @@ dashboard_router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 @inject
 async def get_summary(
     interactor: FromDishka[GetDashboardSummaryInteractor],
+    date_from: Optional[datetime] = Query(None),
+    date_to: Optional[datetime] = Query(None),
 ):
     """
     Получение общих метрик по системе (кол-во пассажиров, риски, топ каналы).
     """
-    return await interactor.execute()
+    return await interactor.execute(date_from=date_from, date_to=date_to)
 
 @dashboard_router.get("/risk-trend", response_model=RiskTrendResponse)
 @inject
@@ -41,11 +43,13 @@ async def get_risk_trend(
 async def get_risk_concentration(
     interactor: FromDishka[GetRiskConcentrationInteractor],
     dimension_type: str = Query(..., description="Разрез: CHANNEL, AGGREGATOR, TERMINAL, CASHDESK"),
+    date_from: Optional[datetime] = Query(None),
+    date_to: Optional[datetime] = Query(None),
 ):
     """
     Получение концентрации рисков по выбранному разрезу.
     """
     try:
-        return await interactor.execute(dimension_type=dimension_type)
+        return await interactor.execute(dimension_type=dimension_type, date_from=date_from, date_to=date_to)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

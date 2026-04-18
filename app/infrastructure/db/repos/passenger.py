@@ -34,9 +34,15 @@ class PassengerRepositoryImpl(IPassengerRepository, BaseSQLAlchemyRepo):
 
         if search:
             s = f"%{search}%"
-            stmt = stmt.where(
-                (PassengerModel.fio_clean.ilike(s)) | (PassengerModel.iin.ilike(s))
-            )
+            # Try to convert search to int for ID search
+            try:
+                search_int = int(search)
+                stmt = stmt.where(
+                    (PassengerModel.fio_clean.ilike(s)) | (PassengerModel.id == search_int)
+                )
+            except (ValueError, TypeError):
+                # If not a number, just search by name
+                stmt = stmt.where(PassengerModel.fio_clean.ilike(s))
 
         if risk_band is not None:
             stmt = stmt.join(
@@ -55,12 +61,18 @@ class PassengerRepositoryImpl(IPassengerRepository, BaseSQLAlchemyRepo):
 
     async def count(self, risk_band: RiskBand | None = None, search: str | None = None) -> int:
         stmt = select(func.count(PassengerModel.id))
-        
+
         if search:
             s = f"%{search}%"
-            stmt = stmt.where(
-                (PassengerModel.fio_clean.ilike(s)) | (PassengerModel.iin.ilike(s))
-            )
+            # Try to convert search to int for ID search
+            try:
+                search_int = int(search)
+                stmt = stmt.where(
+                    (PassengerModel.fio_clean.ilike(s)) | (PassengerModel.id == search_int)
+                )
+            except (ValueError, TypeError):
+                # If not a number, just search by name
+                stmt = stmt.where(PassengerModel.fio_clean.ilike(s))
 
         if risk_band is not None:
             stmt = stmt.join(
@@ -93,7 +105,7 @@ class PassengerRepositoryImpl(IPassengerRepository, BaseSQLAlchemyRepo):
         stmt = delete(PassengerModel).where(PassengerModel.id == passenger_id)
         await self._session.execute(stmt)
 
-    # ── helpers ──────────────────────────────────────────────────────────────
+    #  helpers 
 
     async def _load_score(self, passenger: Passenger) -> None:
         stmt = select(PassengerScoreModel).where(

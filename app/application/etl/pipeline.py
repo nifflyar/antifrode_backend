@@ -91,7 +91,7 @@ class EtlPipeline:
         self._fio_cleaner = FioCleaner()
         self._id_builder = PassengerIdBuilder()
 
-    # ── Main entry point ──────────────────────────────────────────────────────
+    #  Main entry point 
 
     async def run(
         self,
@@ -171,7 +171,7 @@ class EtlPipeline:
 
         return result
 
-    # ── Steps ─────────────────────────────────────────────────────────────────
+    #  Steps 
 
     def _parse(self, file_bytes: bytes, result: EtlResult) -> list[RawTransaction]:
         """Шаг 1: парсим Excel, собираем ошибки строк."""
@@ -249,9 +249,16 @@ class EtlPipeline:
                     iin=raw.iin,
                     doc_no=raw.doc_no,
                     order_no=raw.order_no,
+                    phone=raw.phone,
                     dep_station=raw.dep_station,
                     arr_station=raw.arr_station,
                     route=raw.route,
+                    tariff_type=raw.tariff_type,
+                    service_class=raw.service_class,
+                    gender=raw.gender,
+                    branch=raw.branch,
+                    carrier=raw.carrier,
+                    settlement_type=raw.settlement_type,
                     passenger_id=passenger_id,
                 )
                 transactions.append(tx)
@@ -306,7 +313,7 @@ class EtlPipeline:
         except Exception:
             logger.exception("Не удалось закоммитить FAILED статус для upload_id=%s", uid_str)
 
-    # ── Helpers ───────────────────────────────────────────────────────────────
+    #  Helpers 
 
     @staticmethod
     def _build_tx_id(raw: RawTransaction, upload_id: UploadId, fio_clean: str) -> int:

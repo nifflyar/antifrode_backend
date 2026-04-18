@@ -63,7 +63,7 @@ class RiskConcentrationRepositoryImpl(IRiskConcentrationRepository, BaseSQLAlche
         )
         await self._session.execute(stmt, rows)
 
-    # ── helpers ──────────────────────────────────────────────────────────────
+    #  helpers 
 
     @staticmethod
     def _to_domain(model: RiskConcentrationModel) -> RiskConcentration:

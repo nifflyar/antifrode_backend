@@ -56,23 +56,23 @@ python main.py
 
 ```
 app/
-├── domain/              # Business logic & entities
-│   ├── user/           # User entity, rules, repository interface
-│   ├── auth/           # Authentication policies
-│   ├── audit/          # Audit log entity
-│   └── ...
-├── application/        # Use cases & business workflows
-│   ├── auth/           # Registration, login, refresh tokens
-│   ├── user/           # User CRUD operations
-│   ├── audit/          # Audit log queries
-│   └── services/       # Service implementations
-├── infrastructure/     # Technical implementation
-│   ├── db/            # Database models & repositories
-│   ├── di/            # Dependency injection setup
-│   ├── auth.py        # JWT & password handling
-│   └── config.py      # Configuration loader
-└── presentation/      # FastAPI API layer
-    └── api/          # Endpoints (auth, users, audit, health)
+ domain/              # Business logic & entities
+    user/           # User entity, rules, repository interface
+    auth/           # Authentication policies
+    audit/          # Audit log entity
+    ...
+ application/        # Use cases & business workflows
+    auth/           # Registration, login, refresh tokens
+    user/           # User CRUD operations
+    audit/          # Audit log queries
+    services/       # Service implementations
+ infrastructure/     # Technical implementation
+    db/            # Database models & repositories
+    di/            # Dependency injection setup
+    auth.py        # JWT & password handling
+    config.py      # Configuration loader
+ presentation/      # FastAPI API layer
+     api/          # Endpoints (auth, users, audit, health)
 ```
 
 ## Technology Stack

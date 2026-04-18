@@ -43,16 +43,16 @@ help:
 env-setup:
 	@if [ ! -f .env ]; then \
 		cp .env.example .env; \
-		echo "✓ Created .env file"; \
+		echo " Created .env file"; \
 	else \
-		echo "✗ .env already exists"; \
+		echo " .env already exists"; \
 	fi
 
 # Docker Image
 docker-build:
 	@echo "Building Docker image..."
 	docker-compose build
-	@echo "✓ Build complete"
+	@echo " Build complete"
 
 docker-rebuild: docker-clean docker-build docker-up
 
@@ -60,7 +60,7 @@ docker-rebuild: docker-clean docker-build docker-up
 docker-up:
 	@echo "Starting containers..."
 	docker-compose up -d
-	@echo "✓ Containers started"
+	@echo " Containers started"
 	@echo ""
 	@echo "Services:"
 	@echo "  API:        http://localhost:8000"
@@ -70,17 +70,17 @@ docker-up:
 docker-down:
 	@echo "Stopping containers..."
 	docker-compose down
-	@echo "✓ Containers stopped"
+	@echo " Containers stopped"
 
 docker-stop:
 	@echo "Stopping containers (keeping volumes)..."
 	docker-compose stop
-	@echo "✓ Containers stopped"
+	@echo " Containers stopped"
 
 docker-restart:
 	@echo "Restarting containers..."
 	docker-compose restart
-	@echo "✓ Containers restarted"
+	@echo " Containers restarted"
 
 docker-ps:
 	docker-compose ps
@@ -105,12 +105,12 @@ db-shell:
 db-init:
 	@echo "Initializing database..."
 	docker-compose exec app alembic upgrade head
-	@echo "✓ Database initialized"
+	@echo " Database initialized"
 
 db-migrate:
 	@echo "Running migrations..."
 	docker-compose exec app alembic upgrade head
-	@echo "✓ Migrations applied"
+	@echo " Migrations applied"
 
 db-new-migration:
 	@read -p "Enter migration description: " desc; \
@@ -119,7 +119,7 @@ db-new-migration:
 db-rollback:
 	@echo "Rolling back one migration..."
 	docker-compose exec app alembic downgrade -1
-	@echo "✓ Migration rolled back"
+	@echo " Migration rolled back"
 
 db-current:
 	docker-compose exec app alembic current
@@ -131,12 +131,12 @@ db-history:
 docker-clean:
 	@echo "Removing containers and volumes..."
 	docker-compose down -v
-	@echo "✓ Cleanup complete"
+	@echo " Cleanup complete"
 
 docker-prune:
 	@echo "Removing dangling Docker resources..."
 	docker system prune -a --volumes
-	@echo "✓ System pruned"
+	@echo " System pruned"
 
 # Development
 dev:
@@ -149,7 +149,7 @@ prod:
 	@echo "Starting production environment..."
 	docker-compose up -d
 	@echo ""
-	@echo "✓ Production environment started"
+	@echo " Production environment started"
 	@echo "API: http://localhost:8000"
 
 # Build and Start
@@ -171,7 +171,7 @@ health-check:
 	@echo "Checking service health..."
 	@curl -s http://localhost:8000/health/ | python -m json.tool
 	@echo ""
-	@echo "✓ API is healthy"
+	@echo " API is healthy"
 
 version:
 	@docker -v

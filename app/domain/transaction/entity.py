@@ -37,11 +37,23 @@ class Transaction:
     # Passenger info
     fio: str | None
     iin: str | None
+    phone: str | None
     doc_no: str | None
     order_no: str | None = None
     dep_station: str | None = None
     arr_station: str | None = None
     route: str | None = None
+
+    # Trip details
+    tariff_type: str | None = None
+    service_class: str | None = None
+    gender: str | None = None
+
+    # Organization info
+    branch: str | None = None
+    carrier: str | None = None
+    settlement_type: str | None = None
+
     passenger_id: PassengerId | None = None
 
 

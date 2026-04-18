@@ -1,25 +1,22 @@
-# Build stage
-FROM python:3.13-slim as builder
+# ===== Build stage =====
+FROM python:3.13-slim AS builder
 
 WORKDIR /app
 
-# Install build dependencies
+# Build deps (можно оставить, если реально нужны)
 RUN apt-get update && apt-get install -y \
     build-essential \
     libpq-dev \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv
+# Install uv (если используешь)
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Copy lock file and pyproject
 COPY uv.lock pyproject.toml ./
-
-# Create requirements file from uv.lock
 COPY requirements.txt .
 
-# Runtime stage
+# ===== Runtime stage =====
 FROM python:3.13-slim
 
 ENV PYTHONUNBUFFERED=1 \
@@ -28,26 +25,25 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR ${APP_HOME}
 
-# Install runtime dependencies
+# Runtime deps
 RUN apt-get update && apt-get install -y \
     libpq5 \
     curl \
     netcat-openbsd \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements from builder
+# Install Python deps
 COPY --from=builder /app/requirements.txt .
-
-# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
+# Copy code
 COPY . .
 
-# Create non-root user for security
-# Нам нужно установить права на entrypoint.sh ПЕРЕД переключением на appuser
-RUN chmod +x /app/scripts/entrypoint.sh && \
-    useradd -m -u 1000 appuser && chown -R appuser:appuser ${APP_HOME}
+#  ФИКСЫ (главное)
+RUN useradd -m -u 1000 appuser && \
+    sed -i 's/\r$//' /app/scripts/entrypoint.sh && \
+    chmod 755 /app/scripts/entrypoint.sh && \
+    chown -R appuser:appuser /app
 
 USER appuser
 
@@ -57,5 +53,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 
 EXPOSE 8000
 
-# Run entrypoint script
-ENTRYPOINT ["/app/scripts/entrypoint.sh"]
+#  запускаем через bash (устраняет 90% проблем)
+ENTRYPOINT ["bash", "/app/scripts/entrypoint.sh"]

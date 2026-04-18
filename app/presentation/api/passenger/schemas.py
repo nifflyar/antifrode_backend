@@ -34,6 +34,10 @@ class PassengerListItemSchema(BaseModel):
     last_seen_at: datetime
     risk_band: RiskBand
     final_score: float
+    top_reasons: List[str] = []
+    refund_cnt: int = 0
+    max_tickets_month: int = 0
+    seat_blocking_flag: bool = False
 
 class PassengerListResponse(BaseModel):
     items: List[PassengerListItemSchema]
@@ -61,6 +65,22 @@ class PassengerTransactionSchema(BaseModel):
     channel: Optional[str]
     route: Optional[str]
     fio: Optional[str]
+    iin: Optional[str]
+    phone: Optional[str]
+    doc_no: Optional[str]
+    order_no: Optional[str]
+    dep_station: Optional[str]
+    arr_station: Optional[str]
+    terminal: Optional[str]
+    cashdesk: Optional[str]
+    aggregator: Optional[str]
+    point_of_sale: Optional[str]
+    tariff_type: Optional[str]
+    service_class: Optional[str]
+    gender: Optional[str]
+    branch: Optional[str]
+    carrier: Optional[str]
+    settlement_type: Optional[str]
 
 class RiskOverrideRequest(BaseModel):
     new_risk_band: RiskBand

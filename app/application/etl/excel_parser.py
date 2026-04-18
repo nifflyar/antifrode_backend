@@ -15,7 +15,7 @@ import re
 from openpyxl.worksheet.worksheet import Worksheet
 
 
-# ── Обязательные колонки (регистро-независимо) ────────────────────────────────
+#  Обязательные колонки (регистро-независимо) 
 REQUIRED_COLUMNS: frozenset[str] = frozenset(
     {
         "op_type",
@@ -24,7 +24,7 @@ REQUIRED_COLUMNS: frozenset[str] = frozenset(
     }
 )
 
-# ── Маппинг: возможные названия колонок → канонические имена ─────────────────
+#  Маппинг: возможные названия колонок → канонические имена 
 COLUMN_ALIASES: dict[str, str] = {
     # op_type
     "тип": "op_type",
@@ -96,7 +96,7 @@ COLUMN_ALIASES: dict[str, str] = {
     "doc_no": "doc_no",
     "номер документа": "doc_no",
     "серия и номер": "doc_no",
-    "№ документа": "doc_no",
+    " документа": "doc_no",
     "номер билета": "doc_no",
     # order_no
     "номер заказа": "order_no",
@@ -121,6 +121,28 @@ COLUMN_ALIASES: dict[str, str] = {
     # source
     "источник": "source",
     "source": "source",
+    # tariff_type
+    "тип тарифа": "tariff_type",
+    "tariff_type": "tariff_type",
+    "тип тарифа (льгота)": "tariff_type",
+    "льгота": "tariff_type",
+    # service_class
+    "класс обслуживания": "service_class",
+    "service_class": "service_class",
+    "класс": "service_class",
+    # gender
+    "пол": "gender",
+    "gender": "gender",
+    # branch
+    "филиал": "branch",
+    "branch": "branch",
+    # carrier
+    "перевозчик": "carrier",
+    "carrier": "carrier",
+    # settlement_type
+    "тип расчёта": "settlement_type",
+    "тип расчета": "settlement_type",
+    "settlement_type": "settlement_type",
 }
 
 
@@ -147,6 +169,12 @@ class RawTransaction:
     arr_station: str | None = None
     route: str | None = None
     phone: str | None = None
+    tariff_type: str | None = None
+    service_class: str | None = None
+    gender: str | None = None
+    branch: str | None = None
+    carrier: str | None = None
+    settlement_type: str | None = None
     source: str = "excel_upload"
     # Порядковый номер строки для сообщений об ошибках
     _row_num: int = field(default=0, compare=False, repr=False)
@@ -168,7 +196,7 @@ class ExcelParser:
     def __init__(self, sheet_name: str | int = 0) -> None:
         self._sheet_name = sheet_name
 
-    # ── Public API ────────────────────────────────────────────────────────────
+    #  Public API 
 
     def load(self, file_bytes: bytes) -> tuple[list[RawTransaction], list[str]]:
         """Читает Excel из байт и возвращает (список RawTransaction, список ошибок).
@@ -225,7 +253,7 @@ class ExcelParser:
         except ExcelParseError:
             return False
 
-    # ── Internals ─────────────────────────────────────────────────────────────
+    #  Internals 
 
     def _get_sheet(self, wb: openpyxl.Workbook) -> Worksheet:
         try:
@@ -325,11 +353,17 @@ class ExcelParser:
             arr_station=arr_station,
             route=route,
             phone=cls._str_or_none(get("phone")),
+            tariff_type=cls._str_or_none(get("tariff_type")),
+            service_class=cls._str_or_none(get("service_class")),
+            gender=cls._str_or_none(get("gender")),
+            branch=cls._str_or_none(get("branch")),
+            carrier=cls._str_or_none(get("carrier")),
+            settlement_type=cls._str_or_none(get("settlement_type")),
             source=cls._str_or_none(get("source")) or "excel_upload",
             _row_num=row_num,
         )
 
-    # ── Type coercions ────────────────────────────────────────────────────────
+    #  Type coercions 
 
     @staticmethod
     def _parse_op_type(value: Any, row_num: int) -> str:

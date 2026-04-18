@@ -123,11 +123,18 @@ class TransactionRepositoryImpl(ITransactionRepository, BaseSQLAlchemyRepo):
                 "fee": tx.fee,
                 "fio": tx.fio,
                 "iin": tx.iin,
+                "phone": tx.phone,
                 "doc_no": tx.doc_no,
                 "order_no": tx.order_no,
                 "dep_station": tx.dep_station,
                 "arr_station": tx.arr_station,
                 "route": tx.route,
+                "tariff_type": tx.tariff_type,
+                "service_class": tx.service_class,
+                "gender": tx.gender,
+                "branch": tx.branch,
+                "carrier": tx.carrier,
+                "settlement_type": tx.settlement_type,
                 "passenger_id": tx.passenger_id.value if tx.passenger_id else None,
             }
             for tx in transactions
@@ -224,7 +231,7 @@ class TransactionRepositoryImpl(ITransactionRepository, BaseSQLAlchemyRepo):
             for row in result.all() if row.dim is not None
         ]
 
-    # ── helpers ──────────────────────────────────────────────────────────────
+    #  helpers 
 
     @staticmethod
     def _apply_filters(stmt, train_no, cashdesk, terminal, date_from, date_to):

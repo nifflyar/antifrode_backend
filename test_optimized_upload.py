@@ -12,7 +12,7 @@ def create_broken_excel(filename, rows_count=1000):
     wb = openpyxl.Workbook()
     ws = wb.active
     # Headers
-    headers = ["Операция", "Дата операции", "Цена", "Ф.И.О. пассажира", "Номер телефона, ИИН", "№ документа"]
+    headers = ["Операция", "Дата операции", "Цена", "Ф.И.О. пассажира", "Номер телефона, ИИН", " документа"]
     ws.append(headers)
     
     for i in range(rows_count):

@@ -50,7 +50,7 @@ class PassengerIdBuilder:
         key = self._build_key(iin, fio_clean, doc_no, phone)
         return self._hash_to_int64(key)
 
-    # ── Internals ─────────────────────────────────────────────────────────────
+    #  Internals 
 
     @staticmethod
     def _build_key(

@@ -22,7 +22,7 @@ class TransactionModel(BaseORMModel):
     upload_id: Mapped[UploadId] = mapped_column(UploadIdType, nullable=False, index=True)
     source: Mapped[str] = mapped_column(String(50), nullable=False)
     op_type: Mapped[OperationType] = mapped_column(
-        Enum(OperationType, name="operationtype", create_type=True),
+        Enum(OperationType, name="operationtype", create_type=True, native_enum=False),
         nullable=False,
         index=True,
     )
@@ -44,9 +44,16 @@ class TransactionModel(BaseORMModel):
     iin: Mapped[str | None] = mapped_column(String(20), nullable=True, index=True)
     doc_no: Mapped[str | None] = mapped_column(String(50), nullable=True)
     order_no: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
+    phone: Mapped[str | None] = mapped_column(String(20), nullable=True, index=True)
     dep_station: Mapped[str | None] = mapped_column(String(255), nullable=True)
     arr_station: Mapped[str | None] = mapped_column(String(255), nullable=True)
     route: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    tariff_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    service_class: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    gender: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    branch: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    carrier: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    settlement_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
     passenger_id: Mapped[PassengerId | None] = mapped_column(
         PassengerIdType, nullable=True, index=True
     )

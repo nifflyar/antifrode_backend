@@ -21,7 +21,7 @@ class RiskConcentrationModel(BaseORMModel):
         RiskConcentrationIdType, primary_key=True
     )
     dimension_type: Mapped[DimensionType] = mapped_column(
-        Enum(DimensionType, name="dimensiontype", create_type=True),
+        Enum(DimensionType, name="dimensiontype", create_type=True, native_enum=False),
         nullable=False,
         index=True,
     )

@@ -21,7 +21,7 @@ class UploadModel(BaseORMModel):
         TIMESTAMP(timezone=True), server_default=func.now()
     )
     status: Mapped[UploadStatus] = mapped_column(
-        Enum(UploadStatus, name="uploadstatus", create_type=True),
+        Enum(UploadStatus, name="uploadstatus", create_type=True, native_enum=False),
         nullable=False,
         default=UploadStatus.PENDING,
     )

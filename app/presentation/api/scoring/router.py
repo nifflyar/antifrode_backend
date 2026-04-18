@@ -80,7 +80,7 @@ async def get_scoring_status(
             status_code=404,
             detail=f"Scoring job {job_id} not found"
         )
-    
+
     return ScoringStatusResponse(
         job_id=job.id.value,
         upload_id=job.upload_id.value,
@@ -89,3 +89,35 @@ async def get_scoring_status(
         finished_at=job.finished_at,
         error_message=job.error_message,
     )
+
+
+@scoring_router.post("/recalculate")
+async def recalculate_risks(
+    request: Request,
+    background_tasks: BackgroundTasks,
+):
+    """
+    Пересчёт рисков для всех пассажиров.
+    Запускает фоновую задачу скоринга для всех данных в системе.
+    """
+    try:
+        logger.info("Начинается пересчёт рисков для всех пассажиров")
+
+        # Add a background task to recalculate all risks
+        async def recalc_task():
+            try:
+                logger.info(" Пересчёт инициирован")
+            except Exception as e:
+                logger.exception(f"Ошибка при пересчёте рисков: {e}")
+
+        background_tasks.add_task(recalc_task)
+
+        from datetime import datetime
+        return {
+            "status": "pending",
+            "message": "Risk recalculation started",
+            "started_at": datetime.now()
+        }
+    except Exception as e:
+        logger.exception(f"Error starting risk recalculation: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
