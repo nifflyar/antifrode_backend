@@ -55,7 +55,7 @@ async def register_user_handler(
     )
 
     # Audit log: User registration
-    creator_id = actor_user_id
+    creator_id = claims.user_id if claims else None
     await audit_service.log_action(
         action="USER_REGISTERED",
         entity_type="user",

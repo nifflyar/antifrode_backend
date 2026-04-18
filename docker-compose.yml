@@ -41,6 +41,7 @@ services:
       - ./config.docker.yaml:/app/config.docker.yaml:ro
       - ./alembic:/app/alembic
       - ./scripts:/app/scripts
+      - ./static:/app/static
     ports:
       - "${APP_PORT:-8000}:8000"
     depends_on:

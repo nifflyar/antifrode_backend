@@ -7,12 +7,13 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
 from app.infrastructure.config import Config
+from app.domain.user.vo import UserId
 
 
 @dataclass
 class AuthClaims:
     """Authentication claims from JWT token"""
-    user_id: int
+    user_id: UserId
     is_admin: bool
     role: str
     email: Optional[str] = None
@@ -39,16 +40,16 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 )
 
                 # Extract claims
-                user_id = payload.get("sub")
+                user_id_raw = payload.get("sub")
                 is_admin = payload.get("is_admin", False)
                 email = payload.get("email")
 
                 # Determine role based on is_admin flag and other claims
                 role = "admin" if is_admin else "analyst"
 
-                if user_id:
+                if user_id_raw:
                     claims = AuthClaims(
-                        user_id=int(user_id),
+                        user_id=UserId(int(user_id_raw)),
                         is_admin=is_admin,
                         role=role,
                         email=email,
@@ -57,8 +58,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 else:
                     request.state.auth_claims = None
 
-            except JWTError:
-                # Invalid token - don't set claims
+            except (JWTError, ValueError, TypeError):
+                # Invalid token or invalid user_id - don't set claims
                 request.state.auth_claims = None
         else:
             request.state.auth_claims = None
