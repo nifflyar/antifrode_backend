@@ -54,3 +54,10 @@ docker-compose*.yml
 .env
 config.*.yaml
 !config.docker.yaml
+Untitled*
+*.ipynb
+.ipynb_checkpoints/
+_test_*.py
+test_*.py
+расширенный_ТЗ.md
+implementation_plan.md

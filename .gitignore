@@ -58,7 +58,11 @@ ml_service/__pycache__/
 # DATABASE MIGRATIONS
 alembic/versions/
 
-# AGENT FILES
+# AGENT / SCRATCH FILES
 implementation_plan.md
 расширенный_ТЗ.md
-_test_di.py
+_test_*.py
+test_*.py
+Untitled*
+*.ipynb
+.ipynb_checkpoints/
