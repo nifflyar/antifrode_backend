@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 import logging
 import os
 
@@ -10,6 +12,12 @@ from app.presentation.api.auth.router import auth_router
 from app.presentation.api.user.router import user_router
 from app.presentation.api.audit.router import audit_router
 from app.presentation.api.upload.router import upload_router
+from app.presentation.api.scoring.router import scoring_router
+from app.presentation.api.dashboard.router import dashboard_router
+from app.presentation.api.passenger.router import passenger_router
+from app.presentation.api.operations.router import operations_router
+from app.presentation.api.risk.router import risk_router
+from app.presentation.api.reports.router import reports_router
 from app.presentation.api.middleware import AuthMiddleware
 
 from app.presentation.api.exception import (
@@ -19,6 +27,7 @@ from app.presentation.api.exception import (
 )
 from app.application.common.exceptions import ApplicationError, ValidationError
 
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -94,6 +103,15 @@ def create_app() -> FastAPI:
     container = setup_dishka_container(config)
     setup_dishka(container, app)
 
+    # Add CORS middleware
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"], # В продакшене стоит ограничить
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
     # Add authentication middleware
     app.add_middleware(AuthMiddleware, config=config)
 
@@ -102,6 +120,15 @@ def create_app() -> FastAPI:
     app.include_router(user_router)
     app.include_router(audit_router)
     app.include_router(upload_router)
+    app.include_router(scoring_router)
+    app.include_router(dashboard_router)
+    app.include_router(passenger_router)
+    app.include_router(operations_router)
+    app.include_router(risk_router)
+    app.include_router(reports_router)
+
+    # Mount static files - DO THIS AFTER ALL ROUTERS
+    app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
     app.add_exception_handler(ValidationError, validation_error_handler)
     app.add_exception_handler(ApplicationError, application_error_handler)

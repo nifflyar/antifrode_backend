@@ -56,8 +56,14 @@ Thumbs.db
 ml_service/__pycache__/
 
 # DATABASE MIGRATIONS
-alembic/versions/
+# Note: DO NOT ignore alembic/versions/ as they are required for deployment
+alembic/versions/*.pyc
 
-# AGENT FILES
+# AGENT / SCRATCH FILES
 implementation_plan.md
-_test_di.py
+расширенный_ТЗ.md
+_test_*.py
+test_*.py
+Untitled*
+*.ipynb
+.ipynb_checkpoints/

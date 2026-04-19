@@ -23,6 +23,7 @@ from datetime import UTC, datetime
 from app.application.etl.excel_parser import ExcelParser, ExcelParseError, RawTransaction
 from app.application.etl.fio_cleaner import FioCleaner
 from app.application.etl.passenger_id_builder import PassengerIdBuilder
+from app.application.scoring.process_results import ProcessScoringResultsInteractor
 from app.application.services.audit import AuditService
 from app.domain.passenger.entity import Passenger
 from app.domain.passenger.repository import IPassengerRepository
@@ -75,6 +76,7 @@ class EtlPipeline:
         upload_repo: IUploadRepository,
         audit_service: AuditService,
         transaction_manager: TransactionManager,
+        scoring_interactor: ProcessScoringResultsInteractor,
         batch_size: int = 500,
     ) -> None:
         self._tx_repo = transaction_repo
@@ -82,6 +84,7 @@ class EtlPipeline:
         self._upload_repo = upload_repo
         self._audit = audit_service
         self._tx_manager = transaction_manager
+        self._scoring_interactor = scoring_interactor
         self._batch_size = batch_size
 
         self._parser = ExcelParser()
@@ -113,7 +116,7 @@ class EtlPipeline:
                 raise ValueError("Файл не содержит данных для загрузки.")
 
             # 2. Нормализация и построение passenger'ов
-            passengers, tx_list = self._transform(raw_rows, uid)
+            passengers, tx_list = self._transform(raw_rows, uid, result)
 
             # 3. Upsert пассажиров (один за другим, т.к. нет bulk upsert в IPassengerRepository)
             await self._upsert_passengers(passengers)
@@ -139,6 +142,15 @@ class EtlPipeline:
             await self._audit.log_upload_completed(uid_str, user_id)
 
             await self._tx_manager.commit()
+            
+            # 7. Запуск ML scoring (вне транзакции загрузки данных, 
+            # так как ML-сервис должен видеть закоммиченные данные)
+            try:
+                await self._scoring_interactor.execute(upload_id)
+            except Exception as e:
+                logger.error("Failed to run ML scoring for upload_id=%s: %s", upload_id, e)
+                # Не фейлим всё, если упал только скоринг
+            
             result.success = True
             logger.info(
                 "ETL done: upload_id=%s, passengers=%s, transactions=%s, errors=%s",
@@ -171,76 +183,82 @@ class EtlPipeline:
         return tx_list
 
     def _transform(
-        self, raw_rows: list[RawTransaction], upload_id: UploadId
+        self, raw_rows: list[RawTransaction], upload_id: UploadId, result: EtlResult
     ) -> tuple[dict[int, Passenger], list[Transaction]]:
         """Шаг 2: нормализация ФИО, построение passenger_id, конвертация в domain."""
         passengers: dict[int, Passenger] = {}
         transactions: list[Transaction] = []
-        now = datetime.now(UTC)
 
         for raw in raw_rows:
-            # Нормализация ФИО
-            fio_clean = self._fio_cleaner.clean(raw.fio)
-            fake_score = FioCleaner.fake_fio_score(fio_clean)
-
-            # Построение passenger_id
             try:
-                pid_int = self._id_builder.build(
+                # Нормализация ФИО
+                fio_clean = self._fio_cleaner.clean(raw.fio)
+                fake_score = FioCleaner.fake_fio_score(fio_clean)
+
+                # Построение passenger_id
+                try:
+                    pid_int = self._id_builder.build(
+                        iin=raw.iin,
+                        fio_clean=fio_clean,
+                        doc_no=raw.doc_no,
+                        phone=raw.phone,
+                    )
+                except ValueError as exc:
+                    # Если пассажира совсем нельзя опознать, создаем 'анонимного'
+                    logger.debug("Анонимная строка row=%s: %s", raw._row_num, exc)
+                    pid_int = self._id_builder._hash_to_int64(f"anonymous:{raw._row_num}:{raw.op_datetime}")
+                    fio_clean = fio_clean or "SYSTEM_ANONYMOUS"
+
+                passenger_id = PassengerId(pid_int)
+
+                # Upsert-логика пассажира
+                op_dt = raw.op_datetime.replace(tzinfo=UTC) if raw.op_datetime.tzinfo is None else raw.op_datetime
+                if pid_int not in passengers:
+                    passengers[pid_int] = Passenger.create(
+                        passenger_id=pid_int,
+                        fio_clean=fio_clean,
+                        first_seen_at=op_dt,
+                        fake_fio_score=fake_score,
+                    )
+                else:
+                    passengers[pid_int].update_activity(op_dt)
+
+                # Построение transaction_id
+                tx_id = self._build_tx_id(raw, upload_id, fio_clean)
+
+                tx = Transaction(
+                    id=TransactionId(tx_id),
+                    upload_id=upload_id,
+                    source=raw.source,
+                    op_type=OperationType(raw.op_type),
+                    op_datetime=op_dt,
+                    dep_datetime=(
+                        raw.dep_datetime.replace(tzinfo=UTC)
+                        if raw.dep_datetime and raw.dep_datetime.tzinfo is None
+                        else raw.dep_datetime
+                    ),
+                    train_no=raw.train_no,
+                    channel=raw.channel,
+                    aggregator=raw.aggregator,
+                    terminal=raw.terminal,
+                    cashdesk=raw.cashdesk,
+                    point_of_sale=raw.point_of_sale,
+                    amount=raw.amount,
+                    fee=raw.fee,
+                    fio=raw.fio,
                     iin=raw.iin,
-                    fio_clean=fio_clean,
                     doc_no=raw.doc_no,
+                    order_no=raw.order_no,
+                    dep_station=raw.dep_station,
+                    arr_station=raw.arr_station,
+                    route=raw.route,
+                    passenger_id=passenger_id,
                 )
-            except ValueError as exc:
-                # Если пассажира совсем нельзя опознать, не пропускаем строку,
-                # а создаем 'анонимного' пассажира (для полноты данных в ML)
-                # Генерируем ID на основе данных строки (чтобы был детерминированным)
-                logger.warning("Анонимная строка (нет ID): %s row=%s", exc, raw._row_num)
-                # Используем хэш от ФИО или просто системный маркер
-                pid_int = self._id_builder._hash_to_int64(f"anonymous:{raw._row_num}:{raw.op_datetime}")
-                fio_clean = "SYSTEM_ANONYMOUS"
-
-            passenger_id = PassengerId(pid_int)
-
-            # Upsert-логика пассажира (накапливаем в словаре)
-            op_dt = raw.op_datetime.replace(tzinfo=UTC) if raw.op_datetime.tzinfo is None else raw.op_datetime
-            if pid_int not in passengers:
-                passengers[pid_int] = Passenger.create(
-                    passenger_id=pid_int,
-                    fio_clean=fio_clean,
-                    first_seen_at=op_dt,
-                    fake_fio_score=fake_score,
-                )
-            else:
-                passengers[pid_int].update_activity(op_dt)
-
-            # Построение transaction_id (детерминированный: hash строки)
-            tx_id = self._build_tx_id(raw, upload_id, fio_clean)
-
-            tx = Transaction(
-                id=TransactionId(tx_id),
-                upload_id=upload_id,
-                source=raw.source,
-                op_type=OperationType(raw.op_type),
-                op_datetime=op_dt,
-                dep_datetime=(
-                    raw.dep_datetime.replace(tzinfo=UTC)
-                    if raw.dep_datetime and raw.dep_datetime.tzinfo is None
-                    else raw.dep_datetime
-                ),
-                train_no=raw.train_no,
-                channel=raw.channel,
-                aggregator=raw.aggregator,
-                terminal=raw.terminal,
-                cashdesk=raw.cashdesk,
-                point_of_sale=raw.point_of_sale,
-                amount=raw.amount,
-                fee=raw.fee,
-                fio=raw.fio,
-                iin=raw.iin,
-                doc_no=raw.doc_no,
-                passenger_id=passenger_id,
-            )
-            transactions.append(tx)
+                transactions.append(tx)
+            except Exception as exc:
+                err_msg = f"Строка {raw._row_num}: Ошибка трансформации: {exc}"
+                logger.warning(err_msg)
+                result.parse_errors.append(err_msg)
 
         return passengers, transactions
 

@@ -35,11 +35,14 @@ class PassengerScoreModel(BaseORMModel):
     risk_band: Mapped[RiskBand] = mapped_column(
         Enum(RiskBand, name="riskband", create_type=False),
         nullable=False,
-        default=RiskBand.LOW,
+        default=RiskBand.low,
         index=True,
     )
     top_reasons: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
     seat_blocking_flag: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, index=True
+    )
+    is_manual: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, index=True
     )
     scored_at: Mapped[datetime] = mapped_column(

@@ -3,11 +3,11 @@ from pydantic import BaseModel
 
 
 class UploadResponse(BaseModel):
-    id: int
+    id: str
     filename: str
     status: str
     uploaded_at: str
-    uploaded_by_user_id: Optional[int]
+    uploaded_by_user_id: Optional[str]
 
 
 class UploadListResponse(BaseModel):

@@ -75,6 +75,7 @@ class PassengerScoreMapper:
             risk_band=RiskBand(model.risk_band),
             top_reasons=model.top_reasons or [],
             seat_blocking_flag=model.seat_blocking_flag,
+            is_manual=model.is_manual,
             scored_at=model.scored_at,
         )
 
@@ -90,5 +91,6 @@ class PassengerScoreMapper:
             risk_band=score.risk_band.value,
             top_reasons=score.top_reasons,
             seat_blocking_flag=score.seat_blocking_flag,
+            is_manual=score.is_manual,
             scored_at=score.scored_at,
         )

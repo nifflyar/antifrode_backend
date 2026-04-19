@@ -1,7 +1,5 @@
-# Build stage
-FROM python:3.13-slim as builder
-
-WORKDIR /app
+# Use Python 3.12 as a stable and unified version
+FROM python:3.12-slim as builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
@@ -10,17 +8,21 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv
+# Install uv for faster dependency management
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin/:$PATH"
 
-# Copy lock file and pyproject
-COPY uv.lock pyproject.toml ./
+WORKDIR /app
 
-# Create requirements file from uv.lock
-COPY requirements.txt .
+# Copy lock files
+COPY pyproject.toml uv.lock ./
 
-# Runtime stage
-FROM python:3.13-slim
+# Sync dependencies using uv
+# This ensures we have the exact same environment
+RUN uv pip install --system --no-cache -r pyproject.toml
+
+# Final stage
+FROM python:3.12-slim
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -32,19 +34,25 @@ WORKDIR ${APP_HOME}
 RUN apt-get update && apt-get install -y \
     libpq5 \
     curl \
+    netcat-openbsd \
+    sed \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements from builder
-COPY --from=builder /app/requirements.txt .
-
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy installed packages from builder
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy application code
 COPY . .
 
+# Fix potential Windows CRLF line endings and set permissions for all scripts
+# This makes it robust even if files were edited on Windows
+RUN find scripts -name "*.sh" -exec sed -i 's/\r$//' {} + && \
+    chmod +x scripts/*.sh
+
 # Create non-root user for security
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser ${APP_HOME}
+
 USER appuser
 
 # Health check
@@ -53,5 +61,6 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 
 EXPOSE 8000
 
-# Run application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Explicitly use /bin/sh to run the entrypoint script
+# This bypasses potential 'permission denied' when using volumes on Mac
+ENTRYPOINT ["/bin/sh", "/app/scripts/entrypoint.sh"]

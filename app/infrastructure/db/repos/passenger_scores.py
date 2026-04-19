@@ -43,6 +43,7 @@ class PassengerScoreRepositoryImpl(IPassengerScoreRepository, BaseSQLAlchemyRepo
                 "risk_band": s.risk_band.value,
                 "top_reasons": s.top_reasons,
                 "seat_blocking_flag": s.seat_blocking_flag,
+                "is_manual": s.is_manual,
                 "scored_at": s.scored_at,
             }
             for pid, s in items
@@ -58,6 +59,8 @@ class PassengerScoreRepositoryImpl(IPassengerScoreRepository, BaseSQLAlchemyRepo
                 "seat_blocking_flag": insert(PassengerScoreModel).excluded.seat_blocking_flag,
                 "scored_at": insert(PassengerScoreModel).excluded.scored_at,
             },
+            # Только если риск не был установлен вручную
+            where=(PassengerScoreModel.is_manual == False),
         )
         await self._session.execute(stmt, rows)
 

@@ -75,11 +75,11 @@ async def upload_excel(
     )
 
     return UploadResponse(
-        id=upload_dto.id,
+        id=str(upload_dto.id),
         filename=upload_dto.filename,
         status=upload_dto.status,
-        uploaded_at=upload_dto.uploaded_at,
-        uploaded_by_user_id=claims.user_id.value,
+        uploaded_at=str(upload_dto.uploaded_at),
+        uploaded_by_user_id=str(claims.user_id.value) if claims.user_id else None,
     )
 
 
@@ -105,11 +105,11 @@ async def list_uploads(
     return UploadListResponse(
         items=[
             UploadResponse(
-                id=item.id,
+                id=str(item.id),
                 filename=item.filename,
                 status=item.status,
-                uploaded_at=item.uploaded_at,
-                uploaded_by_user_id=item.uploaded_by_user_id,
+                uploaded_at=str(item.uploaded_at),
+                uploaded_by_user_id=str(item.uploaded_by_user_id) if item.uploaded_by_user_id else None,
             )
             for item in result.items
         ],
@@ -135,11 +135,11 @@ async def get_upload(
     try:
         result = await get_interactor(GetUploadInputDTO(upload_id=upload_id))
         return UploadResponse(
-            id=result.id,
+            id=str(result.id),
             filename=result.filename,
             status=result.status,
-            uploaded_at=result.uploaded_at,
-            uploaded_by_user_id=result.uploaded_by_user_id,
+            uploaded_at=str(result.uploaded_at),
+            uploaded_by_user_id=str(result.uploaded_by_user_id) if result.uploaded_by_user_id else None,
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))

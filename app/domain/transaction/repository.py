@@ -32,7 +32,7 @@ class ITransactionRepository(ABC):
         date_to: datetime | None = None,
         limit: int = 100,
         offset: int = 0,
-    ) -> list[Transaction]:
+    ) -> list[tuple[Transaction, RiskBand]]:
         """Транзакции пассажиров с risk_band IN (HIGH, CRITICAL)."""
         ...
 
@@ -53,3 +53,13 @@ class ITransactionRepository(ABC):
     async def create_batch(self, transactions: list[Transaction]) -> None:
         """Bulk insert транзакций — используется ETL-пайплайном."""
         ...
+
+    @abstractmethod
+    async def get_risk_trend(
+        self, date_from: datetime | None = None, date_to: datetime | None = None
+    ) -> list[dict]:
+        """Возвращает статистику по дням: дата, общее кол-во, подозрительные."""
+        ...
+
+    @abstractmethod
+    async def get_dimension_stats(self, dimension_column: str) -> list[dict]: ...

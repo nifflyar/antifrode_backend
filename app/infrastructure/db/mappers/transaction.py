@@ -26,6 +26,10 @@ class TransactionMapper:
             fio=model.fio,
             iin=model.iin,
             doc_no=model.doc_no,
+            order_no=model.order_no,
+            dep_station=model.dep_station,
+            arr_station=model.arr_station,
+            route=model.route,
             passenger_id=model.passenger_id,
         )
 
@@ -49,5 +53,9 @@ class TransactionMapper:
             fio=tx.fio,
             iin=tx.iin,
             doc_no=tx.doc_no,
+            order_no=tx.order_no,
+            dep_station=tx.dep_station,
+            arr_station=tx.arr_station,
+            route=tx.route,
             passenger_id=tx.passenger_id,
         )

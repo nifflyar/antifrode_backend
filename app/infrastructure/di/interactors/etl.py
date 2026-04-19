@@ -4,6 +4,7 @@ from dishka import Provider, Scope, provide
 from app.application.etl.pipeline import EtlPipeline
 from app.application.common.transaction import TransactionManager
 from app.application.services.audit import AuditService
+from app.application.scoring.process_results import ProcessScoringResultsInteractor
 from app.domain.passenger.repository import IPassengerRepository
 from app.domain.transaction.repository import ITransactionRepository
 from app.domain.upload.repository import IUploadRepository
@@ -20,6 +21,7 @@ class EtlProvider(Provider):
         upload_repo: IUploadRepository,
         audit_service: AuditService,
         transaction_manager: TransactionManager,
+        scoring_interactor: ProcessScoringResultsInteractor,
     ) -> EtlPipeline:
         return EtlPipeline(
             transaction_repo=transaction_repo,
@@ -27,4 +29,5 @@ class EtlProvider(Provider):
             upload_repo=upload_repo,
             audit_service=audit_service,
             transaction_manager=transaction_manager,
+            scoring_interactor=scoring_interactor,
         )

@@ -1,4 +1,3 @@
-
 # app/domain/passenger/repository.py
 from abc import ABC, abstractmethod
 from app.domain.passenger.entity import Passenger
@@ -13,18 +12,13 @@ class IPassengerRepository(ABC):
     async def get_all(
         self,
         risk_band: RiskBand | None = None,
-        channel: str | None = None,
-        cashdesk: str | None = None,
-        terminal: str | None = None,
-        date_from: str | None = None,
-        date_to: str | None = None,
-        seat_blocking_only: bool = False,
+        search: str | None = None,
         limit: int = 50,
         offset: int = 0,
     ) -> list[Passenger]: ...
 
     @abstractmethod
-    async def count(self, risk_band: RiskBand | None = None) -> int: ...
+    async def count(self, risk_band: RiskBand | None = None, search: str | None = None) -> int: ...
 
     @abstractmethod
     async def create_passenger(self, passenger: Passenger) -> None: ...

@@ -98,6 +98,26 @@ COLUMN_ALIASES: dict[str, str] = {
     "серия и номер": "doc_no",
     "№ документа": "doc_no",
     "номер билета": "doc_no",
+    # order_no
+    "номер заказа": "order_no",
+    "order_no": "order_no",
+    # stations
+    "станция отправления": "dep_station",
+    "станция отправ": "dep_station",
+    "станция назначения": "arr_station",
+    "станция назна": "arr_station",
+    "маршрут": "route",
+    # cashdesk
+    "касса": "cashdesk",
+    "cashdesk": "cashdesk",
+    "кассовый узел": "cashdesk",
+    "пункт продажи": "cashdesk",
+    "pos": "cashdesk",
+    # phone
+    "телефон": "phone",
+    "номер телефона": "phone",
+    "контакт": "phone",
+    "phone": "phone",
     # source
     "источник": "source",
     "source": "source",
@@ -122,6 +142,11 @@ class RawTransaction:
     fio: str | None = None
     iin: str | None = None
     doc_no: str | None = None
+    order_no: str | None = None
+    dep_station: str | None = None
+    arr_station: str | None = None
+    route: str | None = None
+    phone: str | None = None
     source: str = "excel_upload"
     # Порядковый номер строки для сообщений об ошибках
     _row_num: int = field(default=0, compare=False, repr=False)
@@ -269,9 +294,16 @@ class ExcelParser:
         iin = cls._str_or_none(get("iin"))
         
         # Если ИИН в отдельной колонке пуст, попробуем вытащить его из ФИО 
-        # (частый случай в ваших выгрузках: "ФИО ИИ123456789012")
         if not iin and fio:
             iin = cls._extract_iin(fio)
+
+        dep_station = cls._str_or_none(get("dep_station"))
+        arr_station = cls._str_or_none(get("arr_station"))
+        route = cls._str_or_none(get("route"))
+        
+        # Генерация маршрута из станций, если самого поля нет (Notebook 6 logic)
+        if not route and dep_station and arr_station:
+            route = f"{dep_station} -> {arr_station}"
 
         return RawTransaction(
             op_type=op_type,
@@ -288,6 +320,11 @@ class ExcelParser:
             fio=fio,
             iin=iin,
             doc_no=cls._str_or_none(get("doc_no")),
+            order_no=cls._str_or_none(get("order_no")),
+            dep_station=dep_station,
+            arr_station=arr_station,
+            route=route,
+            phone=cls._str_or_none(get("phone")),
             source=cls._str_or_none(get("source")) or "excel_upload",
             _row_num=row_num,
         )
@@ -341,7 +378,9 @@ class ExcelParser:
                 return default
             raise ValueError(f"{field_name} пуст в строке {row_num}")
         try:
-            return float(str(value).replace(",", ".").replace(" ", ""))
+            # Чистим строку: убираем пробелы (обычные и неразрывные \u00a0), запятые -> точки
+            s = str(value).replace("\u00a0", "").replace(" ", "").replace(",", ".")
+            return float(s)
         except (ValueError, TypeError):
             raise ValueError(
                 f"{field_name}='{value}' не является числом в строке {row_num}"

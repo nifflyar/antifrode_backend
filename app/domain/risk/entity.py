@@ -30,7 +30,7 @@ class RiskConcentration:
     @classmethod
     def create(
         cls,
-        concentration_id: str,
+        concentration_id: int,
         dimension_type: DimensionType,
         dimension_value: str,
         total_ops: int,

@@ -13,6 +13,7 @@ from app.domain.passenger.repository import IPassengerRepository
 from app.domain.passenger.feature_repository import IPassengerFeatureRepository
 from app.domain.passenger.score_repository import IPassengerScoreRepository
 from app.domain.risk.repository import IRiskConcentrationRepository
+from app.domain.scoring.repository import IScoringJobRepository
 from app.infrastructure.config import Config
 from app.infrastructure.db.factory import create_session_maker
 from app.infrastructure.db.holder import HolderDao
@@ -134,3 +135,10 @@ class DBProvider(Provider):
         holder_dao: HolderDao,
     ) -> IRiskConcentrationRepository:
         return holder_dao.risk_concentration_repo
+
+    @provide(scope=Scope.REQUEST)
+    async def get_scoring_job_repository(
+        self,
+        holder_dao: HolderDao,
+    ) -> IScoringJobRepository:
+        return holder_dao.scoring_job_repo

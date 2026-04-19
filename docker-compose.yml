@@ -36,25 +36,38 @@ services:
       PYTHONUNBUFFERED: "1"
       PYTHONDONTWRITEBYTECODE: "1"
     volumes:
-      # dev-режим (чтобы код обновлялся без пересборки)
       - ./app:/app/app
       - ./main.py:/app/main.py
       - ./config.docker.yaml:/app/config.docker.yaml:ro
       - ./alembic:/app/alembic
+      - ./scripts:/app/scripts
+      - ./static:/app/static
     ports:
       - "${APP_PORT:-8000}:8000"
     depends_on:
       postgres:
         condition: service_healthy
-    command: >
-      sh -c "alembic upgrade head &&
-             uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8000/health/"]
+      test: ["CMD", "curl", "-f", "-L", "http://localhost:8000/health/"]
       interval: 30s
       timeout: 10s
       retries: 3
     restart: unless-stopped
+    networks:
+      - antifrode-network
+
+  ml-service:
+    build:
+      context: ./ml_service
+      dockerfile: Dockerfile
+    container_name: antifrode-ml
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-antifrode_backend_db}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      app:
+        condition: service_healthy
     networks:
       - antifrode-network
 

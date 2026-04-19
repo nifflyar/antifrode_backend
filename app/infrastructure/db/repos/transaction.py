@@ -13,7 +13,7 @@ from app.infrastructure.db.models.passenger_scores import PassengerScoreModel
 from app.infrastructure.db.models.transaction import TransactionModel
 from app.infrastructure.db.repos.base import BaseSQLAlchemyRepo
 
-_SUSPICIOUS_BANDS = (RiskBand.HIGH.value, RiskBand.CRITICAL.value)
+_SUSPICIOUS_BANDS = (RiskBand.high.value, RiskBand.critical.value)
 
 
 class TransactionRepositoryImpl(ITransactionRepository, BaseSQLAlchemyRepo):
@@ -59,9 +59,9 @@ class TransactionRepositoryImpl(ITransactionRepository, BaseSQLAlchemyRepo):
         date_to: datetime | None = None,
         limit: int = 100,
         offset: int = 0,
-    ) -> list[Transaction]:
+    ) -> list[tuple[Transaction, RiskBand]]:
         stmt = (
-            select(TransactionModel)
+            select(TransactionModel, PassengerScoreModel.risk_band)
             .join(
                 PassengerScoreModel,
                 TransactionModel.passenger_id == PassengerScoreModel.passenger_id,
@@ -71,7 +71,10 @@ class TransactionRepositoryImpl(ITransactionRepository, BaseSQLAlchemyRepo):
         stmt = self._apply_filters(stmt, train_no, cashdesk, terminal, date_from, date_to)
         stmt = stmt.order_by(TransactionModel.op_datetime.desc()).limit(limit).offset(offset)
         result = await self._session.execute(stmt)
-        return [TransactionMapper.to_domain(m) for m in result.scalars().all()]
+        return [
+            (TransactionMapper.to_domain(row[0]), RiskBand(row[1]))
+            for row in result.all()
+        ]
 
     async def count_suspicious(
         self,
@@ -121,12 +124,105 @@ class TransactionRepositoryImpl(ITransactionRepository, BaseSQLAlchemyRepo):
                 "fio": tx.fio,
                 "iin": tx.iin,
                 "doc_no": tx.doc_no,
+                "order_no": tx.order_no,
+                "dep_station": tx.dep_station,
+                "arr_station": tx.arr_station,
+                "route": tx.route,
                 "passenger_id": tx.passenger_id.value if tx.passenger_id else None,
             }
             for tx in transactions
         ]
         stmt = insert(TransactionModel).on_conflict_do_nothing(index_elements=["id"])
         await self._session.execute(stmt, rows)
+
+    async def get_risk_trend(
+        self, date_from: datetime | None = None, date_to: datetime | None = None
+    ) -> list[dict]:
+        """Возвращает статистику по дням: дата, общее кол-во, подозрительные."""
+        # Субзапрос для подсчета подозрительных транзакций
+        suspicious_sub = (
+            select(
+                func.date_trunc("day", TransactionModel.op_datetime).label("day"),
+                func.count(TransactionModel.id).label("suspicious_count"),
+            )
+            .join(
+                PassengerScoreModel,
+                TransactionModel.passenger_id == PassengerScoreModel.passenger_id,
+            )
+            .where(PassengerScoreModel.risk_band.in_(_SUSPICIOUS_BANDS))
+            .group_by("day")
+            .subquery()
+        )
+
+        # Основной запрос для общего кол-ва
+        day_expr = func.date_trunc("day", TransactionModel.op_datetime)
+        stmt = (
+            select(
+                day_expr.label("day"),
+                func.count(TransactionModel.id).label("total_count"),
+                func.coalesce(suspicious_sub.c.suspicious_count, 0).label("suspicious_count"),
+            )
+            .outerjoin(suspicious_sub, day_expr == suspicious_sub.c.day)
+        )
+
+        if date_from:
+            stmt = stmt.where(TransactionModel.op_datetime >= date_from)
+        if date_to:
+            stmt = stmt.where(TransactionModel.op_datetime <= date_to)
+
+        stmt = stmt.group_by(day_expr, suspicious_sub.c.suspicious_count).order_by(day_expr)
+        
+        result = await self._session.execute(stmt)
+        return [
+            {
+                "date": row.day,
+                "total_count": row.total_count,
+                "suspicious_count": row.suspicious_count,
+            }
+            for row in result.all()
+        ]
+
+    async def get_dimension_stats(self, dimension_column: str) -> list[dict]:
+        """Группирует транзакции по колонке (channel, terminal и т.д.) 
+        и считает кол-во всего / подозрительных."""
+        col = getattr(TransactionModel, dimension_column, None)
+        if col is None:
+            raise ValueError(f"Invalid dimension column: {dimension_column}")
+
+        # Субзапрос для подозрительных
+        susp_sub = (
+            select(
+                col.label("dim"),
+                func.count(TransactionModel.id).label("suspicious_count"),
+            )
+            .join(PassengerScoreModel, TransactionModel.passenger_id == PassengerScoreModel.passenger_id)
+            .where(PassengerScoreModel.risk_band.in_(_SUSPICIOUS_BANDS))
+            .group_by("dim")
+            .subquery()
+        )
+
+        # Основной запрос
+        stmt = (
+            select(
+                col.label("dim"),
+                func.count(TransactionModel.id).label("total_count"),
+                func.coalesce(susp_sub.c.suspicious_count, 0).label("suspicious_count")
+            )
+            .outerjoin(susp_sub, col == susp_sub.c.dim)
+            .group_by(col, susp_sub.c.suspicious_count)
+            .order_by(func.count(TransactionModel.id).desc())
+        )
+
+        result = await self._session.execute(stmt)
+        return [
+            {
+                "value": row.dim,
+                "total_count": row.total_count,
+                "suspicious_count": row.suspicious_count
+            }
+            # row.dim может быть None для некоторых транзакций, фильтруем или оставляем как 'Unknown'
+            for row in result.all() if row.dim is not None
+        ]
 
     # ── helpers ──────────────────────────────────────────────────────────────
 

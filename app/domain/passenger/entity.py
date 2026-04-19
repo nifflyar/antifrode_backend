@@ -36,13 +36,14 @@ class PassengerScore:
     rule_score: float = 0.0
     ml_score: float = 0.0
     final_score: float = 0.0
-    risk_band: RiskBand = RiskBand.LOW
+    risk_band: RiskBand = RiskBand.low
     top_reasons: list[str] = field(default_factory=list)
     seat_blocking_flag: bool = False
+    is_manual: bool = False
     scored_at: datetime | None = None
 
     def is_critical(self) -> bool:
-        return self.risk_band == RiskBand.CRITICAL
+        return self.risk_band == RiskBand.critical
 
     def is_suspicious(self) -> bool:
         return self.risk_band.is_suspicious()
