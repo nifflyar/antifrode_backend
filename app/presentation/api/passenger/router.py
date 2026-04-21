@@ -18,7 +18,7 @@ from app.presentation.api.passenger.schemas import (
 
 passenger_router = APIRouter(prefix="/passengers", tags=["Passengers"])
 
-@passenger_router.get("/", response_model=PassengerListResponse)
+@passenger_router.get("", response_model=PassengerListResponse)
 @inject
 async def list_passengers(
     interactor: FromDishka[ListPassengersInteractor],
