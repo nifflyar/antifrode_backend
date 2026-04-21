@@ -5,7 +5,7 @@ import { dashboard } from "@/lib/api";
 import type { DashboardSummary, RiskTrendItem, RiskConcentrationItem } from "@/types/api";
 import KPICard from "@/components/KPICard";
 import LoadingState from "@/components/LoadingState";
-import { RefreshCw, TrendingUp, BarChart3, Building2, Armchair, Users, AlertTriangle, ShieldAlert, Percent, Radio, MapPin } from "lucide-react";
+import { RefreshCw, TrendingUp, BarChart3, Building2, Armchair, Users, AlertTriangle, ShieldAlert, Percent, Radio, MapPin, Calendar } from "lucide-react";
 import { motion } from "framer-motion";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -17,18 +17,21 @@ export default function DashboardPage() {
   const [channels, setChannels] = useState<RiskConcentrationItem[]>([]);
   const [terminals, setTerminals] = useState<RiskConcentrationItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [trendLoading, setTrendLoading] = useState(false);
 
-  const fetchAll = useCallback(async () => {
+  // Date filters for trend
+  const [trendDateFrom, setTrendDateFrom] = useState("");
+  const [trendDateTo, setTrendDateTo] = useState("");
+
+  const fetchSummaryAndConcentration = useCallback(async () => {
     setLoading(true);
     try {
-      const [s, t, ch, te] = await Promise.all([
+      const [s, ch, te] = await Promise.all([
         dashboard.summary(),
-        dashboard.riskTrend(),
         dashboard.riskConcentration("CHANNEL"),
         dashboard.riskConcentration("TERMINAL"),
       ]);
       setSummary(s);
-      setTrend(t.items || []);
       setChannels(ch.items || []);
       setTerminals(te.items || []);
     } catch (e) {
@@ -38,9 +41,30 @@ export default function DashboardPage() {
     }
   }, []);
 
+  const fetchTrend = useCallback(async () => {
+    setTrendLoading(true);
+    try {
+      const t = await dashboard.riskTrend(trendDateFrom || undefined, trendDateTo || undefined);
+      setTrend(t.items || []);
+    } catch (e) {
+      console.error("Trend fetch error:", e);
+    } finally {
+      setTrendLoading(false);
+    }
+  }, [trendDateFrom, trendDateTo]);
+
+  const fetchAll = useCallback(() => {
+    fetchSummaryAndConcentration();
+    fetchTrend();
+  }, [fetchSummaryAndConcentration, fetchTrend]);
+
   useEffect(() => {
-    fetchAll();
-  }, [fetchAll]);
+    fetchSummaryAndConcentration();
+  }, [fetchSummaryAndConcentration]);
+
+  useEffect(() => {
+    fetchTrend();
+  }, [fetchTrend]);
 
   const trendData = trend.map((item) => ({
     date: new Date(item.date).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit" }),
@@ -84,7 +108,7 @@ export default function DashboardPage() {
 
   const itemVariants = {
     hidden: { opacity: 0, scale: 0.95, y: 15 },
-    show: { opacity: 1, scale: 1, y: 0, transition: { type: "spring", stiffness: 200, damping: 20 } }
+    show: { opacity: 1, scale: 1, y: 0, transition: { type: "spring" as const, stiffness: 200, damping: 20 } }
   };
 
   return (
@@ -95,8 +119,8 @@ export default function DashboardPage() {
           <h1 className="page-title">Дашборд аналитики</h1>
           <p className="page-subtitle">Глобальный мониторинг рисковых операций</p>
         </div>
-        <button className="btn btn-primary" onClick={fetchAll} disabled={loading}>
-          <RefreshCw size={16} className={loading ? "spinning" : ""} />
+        <button className="btn btn-primary" onClick={fetchAll} disabled={loading || trendLoading}>
+          <RefreshCw size={16} className={loading || trendLoading ? "spinning" : ""} />
           Обновить данные
         </button>
       </div>
@@ -133,12 +157,42 @@ export default function DashboardPage() {
       {/* Charts Row 1 */}
       <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid-2" style={{ marginBottom: 24 }}>
         <motion.div variants={itemVariants} className="card chart-card">
-          <div className="chart-title">
-            <div className="chart-icon" style={{ background: "rgba(249, 115, 22, 0.15)", color: "#f97316" }}><TrendingUp size={18} /></div>
-            Динамика риска по дням
+          <div className="chart-title" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div className="chart-icon" style={{ background: "rgba(249, 115, 22, 0.15)", color: "#f97316", width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyItems: "center", padding: 7 }}><TrendingUp size={18} /></div>
+              Динамика риска
+            </div>
+            {/* Date Picker for Trend */}
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <div style={{ display: "flex", alignItems: "center", background: "var(--bg-secondary)", borderRadius: "var(--radius-sm)", padding: "4px 8px", border: "1px solid var(--border)" }}>
+                <Calendar size={12} style={{ color: "var(--text-muted)", marginRight: 6 }} />
+                <input
+                  type="date"
+                  value={trendDateFrom}
+                  onChange={(e) => setTrendDateFrom(e.target.value)}
+                  style={{ background: "transparent", border: "none", color: "var(--text-primary)", fontSize: "0.75rem", outline: "none", colorScheme: "dark" }}
+                  title="Дата начала"
+                />
+              </div>
+              <span style={{ color: "var(--text-muted)", fontSize: "0.75rem" }}>—</span>
+              <div style={{ display: "flex", alignItems: "center", background: "var(--bg-secondary)", borderRadius: "var(--radius-sm)", padding: "4px 8px", border: "1px solid var(--border)" }}>
+                <Calendar size={12} style={{ color: "var(--text-muted)", marginRight: 6 }} />
+                <input
+                  type="date"
+                  value={trendDateTo}
+                  onChange={(e) => setTrendDateTo(e.target.value)}
+                  style={{ background: "transparent", border: "none", color: "var(--text-primary)", fontSize: "0.75rem", outline: "none", colorScheme: "dark" }}
+                  title="Дата окончания"
+                />
+              </div>
+            </div>
           </div>
-          {loading ? (
+          {trendLoading && !trend.length ? (
             <LoadingState variant="inline" message="Загрузка графика" showTimer={false} />
+          ) : trend.length === 0 ? (
+             <div className="empty-state" style={{ height: 260, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+               <p style={{ fontSize: "0.8125rem" }}>Нет данных за выбранный период</p>
+             </div>
           ) : (
             <ResponsiveContainer width="100%" height={260}>
               <AreaChart data={trendData}>
@@ -160,7 +214,7 @@ export default function DashboardPage() {
 
         <motion.div variants={itemVariants} className="card chart-card">
           <div className="chart-title">
-            <div className="chart-icon" style={{ background: "rgba(56, 189, 248, 0.15)", color: "#38bdf8" }}><BarChart3 size={18} /></div>
+            <div className="chart-icon" style={{ background: "rgba(56, 189, 248, 0.15)", color: "#38bdf8", width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyItems: "center", padding: 7 }}><BarChart3 size={18} /></div>
             Риск по каналам продаж
           </div>
           {loading ? (
@@ -189,7 +243,7 @@ export default function DashboardPage() {
       <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid-2">
         <motion.div variants={itemVariants} className="card chart-card" transition={{ delay: 0.1 }}>
           <div className="chart-title">
-            <div className="chart-icon" style={{ background: "rgba(244, 63, 94, 0.15)", color: "#f43f5e" }}><Building2 size={18} /></div>
+            <div className="chart-icon" style={{ background: "rgba(244, 63, 94, 0.15)", color: "#f43f5e", width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyItems: "center", padding: 7 }}><Building2 size={18} /></div>
             Risk Lift по терминалам (топ-5)
           </div>
           {loading ? (
@@ -215,11 +269,15 @@ export default function DashboardPage() {
 
         <motion.div variants={itemVariants} className="card chart-card" transition={{ delay: 0.15 }}>
           <div className="chart-title">
-            <div className="chart-icon" style={{ background: "rgba(147, 51, 234, 0.15)", color: "#c084fc" }}><Armchair size={18} /></div>
+            <div className="chart-icon" style={{ background: "rgba(147, 51, 234, 0.15)", color: "#c084fc", width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyItems: "center", padding: 7 }}><Armchair size={18} /></div>
             Seat-blocking кейсы (тренд)
           </div>
-          {loading ? (
+          {trendLoading && !trend.length ? (
             <LoadingState variant="inline" message="Загрузка графика" showTimer={false} />
+          ) : trend.length === 0 ? (
+             <div className="empty-state" style={{ height: 260, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+               <p style={{ fontSize: "0.8125rem" }}>Нет данных за выбранный период</p>
+             </div>
           ) : (
             <ResponsiveContainer width="100%" height={260}>
               <AreaChart data={seatData}>

@@ -2,12 +2,20 @@
 
 import React, { useState } from "react";
 import { reports } from "@/lib/api";
-import { FileSpreadsheet, FileText, Download } from "lucide-react";
-import { motion } from "framer-motion";
+import { FileSpreadsheet, FileText, Download, Filter, Calendar } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function ReportsPage() {
   const [passengerIdInput, setPassengerIdInput] = useState("");
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Filters for suspicious excel
+  const [trainNo, setTrainNo] = useState("");
+  const [cashdesk, setCashdesk] = useState("");
+  const [terminal, setTerminal] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   const downloadFile = async (type: string, fetcher: () => Promise<Response>, filename: string) => {
     setDownloading(type);
@@ -28,18 +36,21 @@ export default function ReportsPage() {
     }
   };
 
+  const handleDownloadExcel = () => {
+    downloadFile(
+      "excel", 
+      () => reports.suspiciousExcel({
+        train_no: trainNo || undefined,
+        cashdesk: cashdesk || undefined,
+        terminal: terminal || undefined,
+        date_from: dateFrom || undefined,
+        date_to: dateTo || undefined,
+      }), 
+      `suspicious_ops_${new Date().toISOString().slice(0, 10)}.xlsx`
+    );
+  };
+
   const reportCards = [
-    {
-      id: "excel",
-      icon: FileSpreadsheet,
-      color: "#10b981",
-      bg: "#ecfdf5",
-      title: "Excel Отчёт",
-      description: "Полный список риск-пассажиров с признаками и подозрительными операциями.",
-      buttonText: "Скачать .xlsx",
-      buttonColor: "#10b981",
-      onClick: () => downloadFile("excel", () => reports.suspiciousExcel(), `suspicious_ops_${new Date().toISOString().slice(0, 10)}.xlsx`),
-    },
     {
       id: "concentration",
       icon: FileSpreadsheet,
@@ -63,6 +74,75 @@ export default function ReportsPage() {
       </div>
 
       <div className="grid-3">
+        {/* Suspicious Excel Report */}
+        <motion.div
+          className="card"
+          style={{ padding: 24, gridColumn: "span 1" }}
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+             <FileSpreadsheet size={32} style={{ color: "#10b981" }} />
+             <button 
+               className={`btn btn-sm btn-icon ${showFilters ? "btn-primary" : "btn-ghost"}`} 
+               onClick={() => setShowFilters(!showFilters)}
+               title="Фильтры экспорта"
+             >
+               <Filter size={16} />
+             </button>
+          </div>
+          <h3 style={{ marginBottom: 8 }}>Excel Отчёт (Операции)</h3>
+          <p style={{ fontSize: "0.8125rem", color: "var(--text-secondary)", marginBottom: 20, lineHeight: 1.5 }}>
+            Полный список риск-пассажиров с признаками и подозрительными операциями.
+          </p>
+
+          <AnimatePresence>
+            {showFilters && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                style={{ overflow: "hidden", marginBottom: 20 }}
+              >
+                <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "12px 0", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}>
+                  <div style={{ display: "flex", gap: 8 }}>
+                     <input className="input" placeholder="Поезд (001Ж)" value={trainNo} onChange={(e) => setTrainNo(e.target.value)} style={{ flex: 1, fontSize: "0.75rem", padding: "6px 10px" }} />
+                     <input className="input" placeholder="Касса" value={cashdesk} onChange={(e) => setCashdesk(e.target.value)} style={{ flex: 1, fontSize: "0.75rem", padding: "6px 10px" }} />
+                  </div>
+                  <input className="input" placeholder="Терминал" value={terminal} onChange={(e) => setTerminal(e.target.value)} style={{ fontSize: "0.75rem", padding: "6px 10px" }} />
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <div style={{ flex: 1 }}>
+                       <label style={{ fontSize: "0.6875rem", color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Дата с</label>
+                       <div style={{ position: "relative" }}>
+                         <Calendar size={12} style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
+                         <input type="date" className="input" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} style={{ paddingLeft: 26, fontSize: "0.75rem", colorScheme: "dark" }} />
+                       </div>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                       <label style={{ fontSize: "0.6875rem", color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Дата по</label>
+                       <div style={{ position: "relative" }}>
+                         <Calendar size={12} style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
+                         <input type="date" className="input" value={dateTo} onChange={(e) => setDateTo(e.target.value)} style={{ paddingLeft: 26, fontSize: "0.75rem", colorScheme: "dark" }} />
+                       </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <button
+            className="btn btn-sm"
+            style={{ width: "100%", background: "#10b98114", color: "#10b981", border: "1px solid #10b98130" }}
+            onClick={handleDownloadExcel}
+            disabled={downloading === "excel"}
+          >
+            <Download size={14} />
+            {downloading === "excel" ? "Загрузка..." : "Скачать .xlsx"}
+          </button>
+        </motion.div>
+
+        {/* Other Reports */}
         {reportCards.map((card, idx) => {
           const Icon = card.icon;
           return (
@@ -72,14 +152,15 @@ export default function ReportsPage() {
               style={{ padding: 24 }}
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.1 }}
+              transition={{ delay: 0.1 }}
             >
               <Icon size={32} style={{ color: card.color, marginBottom: 16 }} />
               <h3 style={{ marginBottom: 8 }}>{card.title}</h3>
               <p style={{ fontSize: "0.8125rem", color: "var(--text-secondary)", marginBottom: 20, lineHeight: 1.5 }}>{card.description}</p>
+              <div style={{ flexGrow: 1 }} />
               <button
                 className="btn btn-sm"
-                style={{ width: "100%", background: `${card.color}14`, color: card.color, border: `1px solid ${card.color}30` }}
+                style={{ width: "100%", background: `${card.color}14`, color: card.color, border: `1px solid ${card.color}30`, marginTop: "auto" }}
                 onClick={card.onClick}
                 disabled={downloading === card.id}
               >
@@ -93,7 +174,7 @@ export default function ReportsPage() {
         {/* PDF Report */}
         <motion.div
           className="card card-interactive"
-          style={{ padding: 24 }}
+          style={{ padding: 24, display: "flex", flexDirection: "column" }}
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
@@ -103,6 +184,7 @@ export default function ReportsPage() {
           <p style={{ fontSize: "0.8125rem", color: "var(--text-secondary)", marginBottom: 16, lineHeight: 1.5 }}>
             Детальная карточка-досье на конкретного пассажира.
           </p>
+          <div style={{ flexGrow: 1 }} />
           <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
             <input
               className="input"

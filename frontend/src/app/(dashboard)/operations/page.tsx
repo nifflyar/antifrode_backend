@@ -4,20 +4,38 @@ import React, { useEffect, useState, useCallback } from "react";
 import { operations } from "@/lib/api";
 import type { SuspiciousOperation } from "@/types/api";
 import RiskBadge from "@/components/RiskBadge";
-import { ArrowLeftRight, ChevronLeft, ChevronRight } from "lucide-react";
-import { motion } from "framer-motion";
+import { ArrowLeftRight, ChevronLeft, ChevronRight, Filter, X, Search, Calendar } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function OperationsPage() {
   const [items, setItems] = useState<SuspiciousOperation[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
   const limit = 20;
+
+  // Filters
+  const [trainNo, setTrainNo] = useState("");
+  const [cashdesk, setCashdesk] = useState("");
+  const [terminal, setTerminal] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+
+  const activeFiltersCount = [trainNo, cashdesk, terminal, dateFrom, dateTo].filter(Boolean).length;
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await operations.suspicious({ limit, offset: (page - 1) * limit });
+      const res = await operations.suspicious({
+        train_no: trainNo || undefined,
+        cashdesk: cashdesk || undefined,
+        terminal: terminal || undefined,
+        date_from: dateFrom || undefined,
+        date_to: dateTo || undefined,
+        limit,
+        offset: (page - 1) * limit,
+      });
       setItems(res.items || []);
       setTotal(res.total || 0);
     } catch {
@@ -26,9 +44,18 @@ export default function OperationsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page]);
+  }, [page, trainNo, cashdesk, terminal, dateFrom, dateTo]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  const resetFilters = () => {
+    setTrainNo("");
+    setCashdesk("");
+    setTerminal("");
+    setDateFrom("");
+    setDateTo("");
+    setPage(1);
+  };
 
   const offset = (page - 1) * limit;
 
@@ -39,12 +66,121 @@ export default function OperationsPage() {
           <h1 className="page-title">Операции высокого риска</h1>
           <p className="page-subtitle">Подозрительные транзакции, выявленные системой</p>
         </div>
+        <button
+          className={`btn ${showFilters ? "btn-primary" : "btn-secondary"}`}
+          onClick={() => setShowFilters(!showFilters)}
+        >
+          <Filter size={16} />
+          Фильтры
+          {activeFiltersCount > 0 && (
+            <span style={{
+              background: "var(--accent)",
+              color: "#fff",
+              borderRadius: "50%",
+              width: 20,
+              height: 20,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "0.6875rem",
+              fontWeight: 800,
+              marginLeft: 4,
+            }}>
+              {activeFiltersCount}
+            </span>
+          )}
+        </button>
       </div>
+
+      {/* Filter Panel */}
+      <AnimatePresence>
+        {showFilters && (
+          <motion.div
+            className="card"
+            style={{ padding: 24, marginBottom: 24 }}
+            initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+            animate={{ opacity: 1, height: "auto", marginBottom: 24 }}
+            exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+            transition={{ duration: 0.25 }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <Search size={16} style={{ color: "var(--accent)" }} />
+                <h3 style={{ fontSize: "0.9375rem", fontWeight: 700 }}>Параметры фильтрации</h3>
+              </div>
+              {activeFiltersCount > 0 && (
+                <button className="btn btn-ghost btn-sm" onClick={resetFilters} style={{ color: "var(--error)" }}>
+                  <X size={14} /> Сбросить всё
+                </button>
+              )}
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 16 }}>
+              <div>
+                <label className="form-label">Номер поезда</label>
+                <input
+                  className="input"
+                  placeholder="Например: 001Ж"
+                  value={trainNo}
+                  onChange={(e) => { setTrainNo(e.target.value); setPage(1); }}
+                />
+              </div>
+              <div>
+                <label className="form-label">Касса</label>
+                <input
+                  className="input"
+                  placeholder="Номер кассы"
+                  value={cashdesk}
+                  onChange={(e) => { setCashdesk(e.target.value); setPage(1); }}
+                />
+              </div>
+              <div>
+                <label className="form-label">Терминал</label>
+                <input
+                  className="input"
+                  placeholder="ID терминала"
+                  value={terminal}
+                  onChange={(e) => { setTerminal(e.target.value); setPage(1); }}
+                />
+              </div>
+              <div>
+                <label className="form-label">
+                  <Calendar size={12} style={{ marginRight: 4, verticalAlign: "middle" }} />
+                  Дата с
+                </label>
+                <input
+                  className="input"
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
+                />
+              </div>
+              <div>
+                <label className="form-label">
+                  <Calendar size={12} style={{ marginRight: 4, verticalAlign: "middle" }} />
+                  Дата по
+                </label>
+                <input
+                  className="input"
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
+                />
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <motion.div className="card" style={{ padding: 24 }} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
           <ArrowLeftRight size={20} style={{ color: "var(--accent)" }} />
           <h2 style={{ fontSize: "1.125rem" }}>Журнал операций</h2>
+          {activeFiltersCount > 0 && (
+            <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 500 }}>
+              (фильтров применено: {activeFiltersCount})
+            </span>
+          )}
         </div>
 
         <div style={{ overflowX: "auto", minHeight: 400 }}>
@@ -76,7 +212,12 @@ export default function OperationsPage() {
                   <td colSpan={9}>
                     <div className="empty-state">
                       <div className="empty-state-icon"><ArrowLeftRight size={28} /></div>
-                      <p>Нет данных</p>
+                      <p>{activeFiltersCount > 0 ? "Нет данных по заданным фильтрам" : "Нет данных"}</p>
+                      {activeFiltersCount > 0 && (
+                        <button className="btn btn-secondary btn-sm" style={{ marginTop: 12 }} onClick={resetFilters}>
+                          Сбросить фильтры
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

@@ -131,7 +131,7 @@ export const dashboard = {
   riskTrend: (dateFrom?: string, dateTo?: string) => {
     const params = new URLSearchParams();
     if (dateFrom) params.set("date_from", dateFrom);
-    if (dateTo) params.set("date_to", dateTo);
+    if (dateTo) params.set("date_to", dateTo.includes("T") ? dateTo : `${dateTo}T23:59:59`);
     const qs = params.toString();
     return request<RiskTrendResponse>(`/dashboard/risk-trend${qs ? `?${qs}` : ""}`);
   },
@@ -179,7 +179,7 @@ export const operations = {
     if (params.cashdesk) qs.set("cashdesk", params.cashdesk);
     if (params.terminal) qs.set("terminal", params.terminal);
     if (params.date_from) qs.set("date_from", params.date_from);
-    if (params.date_to) qs.set("date_to", params.date_to);
+    if (params.date_to) qs.set("date_to", params.date_to.includes("T") ? params.date_to : `${params.date_to}T23:59:59`);
     qs.set("limit", String(params.limit ?? 100));
     qs.set("offset", String(params.offset ?? 0));
     return request<SuspiciousOperationsResponse>(
@@ -234,7 +234,7 @@ export const reports = {
     if (params?.cashdesk) qs.set("cashdesk", params.cashdesk);
     if (params?.terminal) qs.set("terminal", params.terminal);
     if (params?.date_from) qs.set("date_from", params.date_from);
-    if (params?.date_to) qs.set("date_to", params.date_to);
+    if (params?.date_to) qs.set("date_to", params.date_to.includes("T") ? params.date_to : `${params.date_to}T23:59:59`);
     const query = qs.toString();
     return requestRaw(`/reports/operations/suspicious/excel${query ? `?${query}` : ""}`);
   },
