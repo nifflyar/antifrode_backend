@@ -128,7 +128,7 @@ def create_app() -> FastAPI:
     app.include_router(reports_router)
 
     # Mount static files - DO THIS AFTER ALL ROUTERS
-    app.mount("/", StaticFiles(directory="static", html=True), name="static")
+    # app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
     app.add_exception_handler(ValidationError, validation_error_handler)
     app.add_exception_handler(ApplicationError, application_error_handler)

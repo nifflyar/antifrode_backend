@@ -30,7 +30,8 @@ make env-setup
 make docker-up
 
 # 3. Сервисы доступны по адресам:
-# - Frontend/API: http://localhost:8000
+# - Frontend: http://localhost:3000
+# - API: http://localhost:8000
 # - Документация (Swagger): http://localhost:8000/docs
 # - ML Сервис: http://localhost:8001
 ```
@@ -58,7 +59,7 @@ make docker-up
 | **База данных** | PostgreSQL 16 + SQLAlchemy 2.0 (Async) |
 | **Миграции** | Alembic |
 | **ML Сервис** | Scikit-learn (Isolation Forest), Pandas |
-| **Frontend** | Vanilla JavaScript (SPA), CSS Modern UI |
+| **Frontend** | Next.js (Modern Dashboard), TypeScript |
 | **Контейнеризация** | Docker, Docker Compose |
 | **Валидация** | Pydantic v2 |
 

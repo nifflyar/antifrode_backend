@@ -41,7 +41,6 @@ services:
       - ./config.docker.yaml:/app/config.docker.yaml:ro
       - ./alembic:/app/alembic
       - ./scripts:/app/scripts
-      - ./static:/app/static
     ports:
       - "${APP_PORT:-8000}:8000"
     depends_on:
@@ -52,6 +51,22 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    restart: unless-stopped
+    networks:
+      - antifrode-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: antifrode-frontend
+    environment:
+      - BACKEND_URL=http://app:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      app:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - antifrode-network
